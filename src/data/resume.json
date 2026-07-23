@@ -1,0 +1,83 @@
+{
+  "basicInfo": {
+    "name": "张三",
+    "title": "高级软件工程师",
+    "phone": "138-0000-0000",
+    "email": "zhangsan@example.com",
+    "location": "北京",
+    "website": "https://example.com",
+    "github": "https://github.com/zhangsan"
+  },
+  "summary": "8 年软件开发经验，专注于后端架构与分布式系统设计。擅长 Java、Go 及微服务技术栈，具备大型互联网项目从 0 到 1 的落地经验。注重代码质量与系统可维护性，有带领小团队完成复杂项目交付的经验。",
+  "workExperiences": [
+    {
+      "id": "work-1",
+      "company": "某某科技有限公司",
+      "position": "高级后端工程师",
+      "startDate": "2021-03",
+      "endDate": "至今",
+      "description": "负责核心业务系统的架构设计与开发，主导微服务拆分与性能优化。",
+      "highlights": [
+        "主导订单系统重构，QPS 提升 3 倍，P99 延迟降低 60%",
+        "设计并实现统一鉴权中心，支撑 20+ 微服务接入",
+        "建立 CI/CD 流水线，发布效率提升 50%"
+      ]
+    },
+    {
+      "id": "work-2",
+      "company": "某某互联网集团",
+      "position": "后端工程师",
+      "startDate": "2018-07",
+      "endDate": "2021-02",
+      "description": "参与用户中心、消息推送等基础服务的开发与维护。",
+      "highlights": [
+        "开发高并发消息推送服务，日处理量达亿级",
+        "优化数据库查询与缓存策略，接口响应时间降低 40%",
+        "参与 Code Review 与新人技术培养"
+      ]
+    }
+  ],
+  "projectExperiences": [
+    {
+      "id": "proj-1",
+      "name": "分布式任务调度平台",
+      "role": "技术负责人",
+      "startDate": "2022-06",
+      "endDate": "2023-03",
+      "description": "自研分布式任务调度平台，替代原有 Cron 方案，支持可视化配置与监控告警。",
+      "techStack": ["Java", "Spring Boot", "Redis", "MySQL", "Kafka"],
+      "highlights": [
+        "支持万级任务并发调度，任务执行成功率 99.9%",
+        "提供 Web 管理界面，降低运维成本",
+        "接入 Hubble 监控，实现故障分钟级发现"
+      ]
+    }
+  ],
+  "educations": [
+    {
+      "id": "edu-1",
+      "school": "某某大学",
+      "degree": "本科",
+      "major": "计算机科学与技术",
+      "startDate": "2014-09",
+      "endDate": "2018-06"
+    }
+  ],
+  "skillGroups": [
+    {
+      "id": "skill-1",
+      "category": "编程语言",
+      "items": ["Java", "Go", "Python", "TypeScript"]
+    },
+    {
+      "id": "skill-2",
+      "category": "框架与中间件",
+      "items": ["Spring Boot", "MyBatis", "Redis", "Kafka", "Elasticsearch"]
+    },
+    {
+      "id": "skill-3",
+      "category": "工程能力",
+      "items": ["微服务架构", "分布式系统设计", "性能优化", "CI/CD"]
+    }
+  ]
+}
