@@ -389,6 +389,16 @@ export default function ResumeEditor({ resume, onChange }: ResumeEditorProps) {
           ))}
         </div>
       </section>
+
+      <section>
+        <ListEditor
+          label="自我评价"
+          items={resume.selfEvaluation ?? []}
+          onChange={(items) =>
+            onChange({ ...resume, selfEvaluation: items.filter(Boolean) })
+          }
+        />
+      </section>
     </div>
   )
 }

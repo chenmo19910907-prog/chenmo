@@ -57,7 +57,7 @@ function mutedLine(text: string): Paragraph {
   })
 }
 
-export async function exportToWord(resume: Resume): Promise<void> {
+export async function exportToWord(resume: Resume, filename?: string): Promise<void> {
   const { basicInfo } = resume
   const contactParts = [
     basicInfo.phone,
@@ -123,12 +123,22 @@ export async function exportToWord(resume: Resume): Promise<void> {
   }
 
   if (resume.educations.length > 0) {
-    children.push(sectionTitle('教育背景'))
+    children.push(sectionTitle('学历'))
     for (const edu of resume.educations) {
-      children.push(
-        boldLine(`${edu.school}  ·  ${edu.degree}  ·  ${edu.major}`),
-        mutedLine(`${edu.startDate} - ${edu.endDate}`),
-      )
+      if (edu.deemphasized) {
+        const line = [edu.school, edu.degree, edu.major].filter(Boolean).join('  ·  ')
+        children.push(mutedLine(line))
+      } else {
+        const line = [edu.degree, edu.major, edu.school].filter(Boolean).join('  ·  ')
+        children.push(bodyText(line))
+      }
+      if (edu.startDate || edu.endDate) {
+        children.push(
+          mutedLine(
+            [edu.startDate, edu.endDate].filter(Boolean).join(' - '),
+          ),
+        )
+      }
     }
   }
 
@@ -141,10 +151,17 @@ export async function exportToWord(resume: Resume): Promise<void> {
     }
   }
 
+  if (resume.selfEvaluation && resume.selfEvaluation.length > 0) {
+    children.push(sectionTitle('自我评价'))
+    for (const item of resume.selfEvaluation) {
+      children.push(bulletItem(item))
+    }
+  }
+
   const doc = new Document({
     sections: [{ properties: {}, children }],
   })
 
   const blob = await Packer.toBlob(doc)
-  saveAs(blob, `${basicInfo.name}-简历.docx`)
+  saveAs(blob, filename ?? `${basicInfo.name}-简历.docx`)
 }

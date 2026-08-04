@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# 本地密钥与 Cookie（勿提交）
+server/config/boss.json
+server/config/liepin.json
+server/config/llm.json
+server/data/boss-debug.png

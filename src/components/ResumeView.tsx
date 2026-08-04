@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import type { Resume } from '../types/resume'
 
 interface ResumeViewProps {
@@ -70,7 +71,17 @@ export default function ResumeView({ resume }: ResumeViewProps) {
               <div key={work.id}>
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <h3 className="font-semibold text-slate-900">
-                    {work.company}
+                    <Link
+                      to={`/works/${work.id}`}
+                      className="hover:text-blue-700 hover:underline"
+                    >
+                      {work.company}
+                    </Link>
+                    {work.featured && (
+                      <span className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                        核心经历
+                      </span>
+                    )}
                     <span className="mx-2 text-slate-400">·</span>
                     {work.position}
                   </h3>
@@ -86,6 +97,12 @@ export default function ResumeView({ resume }: ResumeViewProps) {
                     ))}
                   </ul>
                 )}
+                <Link
+                  to={`/works/${work.id}`}
+                  className="mt-2 inline-block text-sm text-blue-600 hover:underline"
+                >
+                  查看详细介绍 →
+                </Link>
               </div>
             ))}
           </div>
@@ -134,25 +151,42 @@ export default function ResumeView({ resume }: ResumeViewProps) {
       )}
 
       {resume.educations.length > 0 && (
-        <Section title="教育背景">
-          <div className="space-y-4">
-            {resume.educations.map((edu) => (
-              <div
-                key={edu.id}
-                className="flex flex-wrap items-baseline justify-between gap-2"
-              >
-                <h3 className="font-semibold text-slate-900">
+        <Section title="学历">
+          <div className="space-y-2">
+            {resume.educations.map((edu) =>
+              edu.deemphasized ? (
+                <div key={edu.id} className="text-xs text-slate-400">
                   {edu.school}
-                  <span className="mx-2 text-slate-400">·</span>
+                  <span className="mx-1">·</span>
                   {edu.degree}
-                  <span className="mx-2 text-slate-400">·</span>
+                  {edu.major && (
+                    <>
+                      <span className="mx-1">·</span>
+                      {edu.major}
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div key={edu.id} className="text-sm text-slate-600">
+                  <span className="font-medium text-slate-800">{edu.degree}</span>
+                  <span className="mx-1.5 text-slate-400">·</span>
                   {edu.major}
-                </h3>
-                <span className="text-sm text-slate-500">
-                  {edu.startDate} - {edu.endDate}
-                </span>
-              </div>
-            ))}
+                  {edu.school && (
+                    <>
+                      <span className="mx-1.5 text-slate-400">·</span>
+                      <span className="text-slate-500">{edu.school}</span>
+                    </>
+                  )}
+                  {(edu.startDate || edu.endDate) && (
+                    <span className="ml-2 text-slate-400">
+                      {edu.startDate}
+                      {edu.startDate && edu.endDate && ' - '}
+                      {edu.endDate}
+                    </span>
+                  )}
+                </div>
+              ),
+            )}
           </div>
         </Section>
       )}
@@ -169,6 +203,16 @@ export default function ResumeView({ resume }: ResumeViewProps) {
               </div>
             ))}
           </div>
+        </Section>
+      )}
+
+      {resume.selfEvaluation && resume.selfEvaluation.length > 0 && (
+        <Section title="自我评价">
+          <ul className="list-disc space-y-1 pl-5 text-slate-700">
+            {resume.selfEvaluation.map((item, index) => (
+              <li key={index}>{item}</li>
+            ))}
+          </ul>
         </Section>
       )}
     </article>

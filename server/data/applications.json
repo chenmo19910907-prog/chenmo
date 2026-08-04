@@ -1,0 +1,36 @@
+{
+  "applications": [
+    {
+      "id": "423dc710-e021-49ff-a4f3-d873eab5dd0b",
+      "jobId": "0bdcbe94-a3fa-4fcf-ac97-02ff1a843b33",
+      "company": "腾讯",
+      "jobTitle": "游戏测试组长（海外手游）",
+      "status": "watching",
+      "priority": "medium",
+      "profile": "business-expert",
+      "notes": "",
+      "appliedAt": null,
+      "nextAction": "",
+      "nextActionDate": null,
+      "interviewNotes": [],
+      "createdAt": "2026-08-04T09:22:17.112Z",
+      "updatedAt": "2026-08-04T09:22:17.112Z"
+    },
+    {
+      "id": "171202f4-b777-418e-aa25-44eb6c5411bc",
+      "jobId": "65d4884a-356d-4daa-9ab0-d6be63b54382",
+      "company": "字节跳动",
+      "jobTitle": "语音社交-高级测试工程师",
+      "status": "watching",
+      "priority": "medium",
+      "profile": "business-expert",
+      "notes": "",
+      "appliedAt": null,
+      "nextAction": "",
+      "nextActionDate": null,
+      "interviewNotes": [],
+      "createdAt": "2026-08-04T09:22:17.113Z",
+      "updatedAt": "2026-08-04T09:22:17.113Z"
+    }
+  ]
+}

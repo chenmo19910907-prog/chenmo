@@ -1,0 +1,166 @@
+{
+  "refreshIntervalHours": 12,
+  "enabled": true,
+  "keywords": [
+    "测试工程师",
+    "QA",
+    "质量保障",
+    "语音房",
+    "社交",
+    "游戏测试",
+    "移动端测试",
+    "海外测试"
+  ],
+  "channels": {
+    "career_page": { "enabled": true, "label": "官网招聘" },
+    "boss": { "enabled": true, "label": "Boss直聘" },
+    "liepin": { "enabled": true, "label": "猎聘" },
+    "manual": { "enabled": true, "label": "手动导入" }
+  },
+  "companies": [
+    {
+      "id": "momo",
+      "name": "挚文集团（陌陌）",
+      "enabled": true,
+      "sources": [
+        {
+          "type": "career_page",
+          "url": "https://jobs.immomo.com",
+          "keywords": ["测试", "QA", "质量"]
+        }
+      ]
+    },
+    {
+      "id": "bytedance",
+      "name": "字节跳动",
+      "enabled": true,
+      "sources": [
+        {
+          "type": "career_page",
+          "url": "https://jobs.bytedance.com",
+          "keywords": ["测试", "QA", "质量保障"]
+        }
+      ]
+    },
+    {
+      "id": "tencent",
+      "name": "腾讯",
+      "enabled": true,
+      "sources": [
+        {
+          "type": "career_page",
+          "url": "https://careers.tencent.com",
+          "keywords": ["测试", "QA"]
+        }
+      ]
+    },
+    {
+      "id": "netease",
+      "name": "网易",
+      "enabled": true,
+      "sources": [
+        {
+          "type": "career_page",
+          "url": "https://hr.163.com",
+          "keywords": ["测试", "QA", "游戏"]
+        }
+      ]
+    },
+    {
+      "id": "kuaishou",
+      "name": "快手",
+      "enabled": true,
+      "sources": [
+        {
+          "type": "career_page",
+          "url": "https://zhaopin.kuaishou.cn",
+          "keywords": ["测试", "QA", "直播"]
+        }
+      ]
+    },
+    {
+      "id": "bilibili",
+      "name": "哔哩哔哩",
+      "enabled": true,
+      "sources": [
+        {
+          "type": "career_page",
+          "url": "https://jobs.bilibili.com",
+          "keywords": ["测试", "QA", "直播"]
+        }
+      ]
+    },
+    {
+      "id": "xiaohongshu",
+      "name": "小红书",
+      "enabled": true,
+      "sources": [
+        {
+          "type": "career_page",
+          "url": "https://job.xiaohongshu.com",
+          "keywords": ["测试", "QA"]
+        }
+      ]
+    },
+    {
+      "id": "mihoyo",
+      "name": "米哈游",
+      "enabled": true,
+      "sources": [
+        {
+          "type": "career_page",
+          "url": "https://careers.mihoyo.com",
+          "keywords": ["测试", "QA", "游戏"]
+        }
+      ]
+    },
+    {
+      "id": "meituan",
+      "name": "美团",
+      "enabled": true,
+      "sources": [
+        {
+          "type": "career_page",
+          "url": "https://zhaopin.meituan.com",
+          "keywords": ["测试", "QA"]
+        }
+      ]
+    },
+    {
+      "id": "alibaba",
+      "name": "阿里巴巴",
+      "enabled": true,
+      "sources": [
+        {
+          "type": "career_page",
+          "url": "https://talent.alibaba.com",
+          "keywords": ["测试", "QA"]
+        }
+      ]
+    },
+    {
+      "id": "baidu",
+      "name": "百度",
+      "enabled": true,
+      "sources": [
+        {
+          "type": "career_page",
+          "url": "https://talent.baidu.com",
+          "keywords": ["测试", "QA"]
+        }
+      ]
+    },
+    {
+      "id": "didi",
+      "name": "滴滴",
+      "enabled": true,
+      "sources": [
+        {
+          "type": "career_page",
+          "url": "https://talent.didiglobal.com",
+          "keywords": ["测试", "QA"]
+        }
+      ]
+    }
+  ]
+}

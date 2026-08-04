@@ -8,6 +8,23 @@ export interface BasicInfo {
   github?: string
 }
 
+export interface WorkProject {
+  name: string
+  description: string
+  highlights?: string[]
+}
+
+export interface WorkDetail {
+  tagline: string
+  businessOverview: string
+  businessPoints: string[]
+  responsibilities: string[]
+  achievements: string[]
+  tools: string[]
+  projects: WorkProject[]
+  teamInfo?: string
+}
+
 export interface WorkExperience {
   id: string
   company: string
@@ -16,6 +33,8 @@ export interface WorkExperience {
   endDate: string
   description: string
   highlights: string[]
+  featured?: boolean
+  detail?: WorkDetail
 }
 
 export interface ProjectExperience {
@@ -36,6 +55,8 @@ export interface Education {
   major: string
   startDate: string
   endDate: string
+  /** 弱化展示（如大专），不抢本科视觉重心 */
+  deemphasized?: boolean
 }
 
 export interface SkillGroup {
@@ -51,4 +72,5 @@ export interface Resume {
   projectExperiences: ProjectExperience[]
   educations: Education[]
   skillGroups: SkillGroup[]
+  selfEvaluation?: string[]
 }
