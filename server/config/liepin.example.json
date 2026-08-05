@@ -1,0 +1,6 @@
+{
+  "enabled": false,
+  "queries": ["语音房 测试", "测试工程师 社交", "QA 海外"],
+  "cookie": "",
+  "note": "登录 liepin.com 后从 DevTools 复制 Cookie，或设置 CHENMO_LIEPIN_COOKIE"
+}
