@@ -639,6 +639,154 @@ app.get('/api/dashboard', async (_req, res) => {
   })
 })
 
+const SCREENSHOTS_DIR = path.join(__dirname, 'data/screenshots')
+const PUBLIC_SITE_URL = process.env.CHENMO_PUBLIC_URL || ''
+
+function isLocalRequest(req) {
+  const ip = req.ip || req.socket?.remoteAddress || ''
+  const host = (req.get('host') || '').toLowerCase()
+  return (
+    ip === '127.0.0.1' ||
+    ip === '::1' ||
+    ip === '::ffff:127.0.0.1' ||
+    host.startsWith('localhost') ||
+    host.startsWith('127.0.0.1')
+  )
+}
+
+function resolvePublicSiteUrl(req) {
+  if (PUBLIC_SITE_URL) return PUBLIC_SITE_URL.replace(/\/$/, '')
+  const host = req.get('host')
+  if (!host || host.includes('localhost') || host.startsWith('127.0.0.1')) {
+    return ''
+  }
+  const proto = req.get('x-forwarded-proto') || req.protocol || 'http'
+  return `${proto}://${host}`.replace(/\/$/, '')
+}
+
+function resolveResumePublicUrl(req, variantId) {
+  const base = resolvePublicSiteUrl(req)
+  if (base) return `${base}/r/${variantId}`
+  return `/r/${variantId}`
+}
+
+async function saveScreenshotBase64(base64, variantId) {
+  if (!base64?.startsWith('data:image')) return null
+  const match = base64.match(/^data:image\/(\w+);base64,(.+)$/)
+  if (!match) return null
+  const ext = match[1] === 'jpeg' ? 'jpg' : match[1]
+  const buffer = Buffer.from(match[2], 'base64')
+  if (buffer.length > 3 * 1024 * 1024) {
+    throw new Error('截图过大，请压缩后重试（最大 3MB）')
+  }
+  await fs.mkdir(SCREENSHOTS_DIR, { recursive: true })
+  const filename = `${variantId}.${ext}`
+  await fs.writeFile(path.join(SCREENSHOTS_DIR, filename), buffer)
+  return `/api/uploads/screenshots/${filename}`
+}
+
+app.use('/api/uploads/screenshots', express.static(SCREENSHOTS_DIR))
+
+app.get('/api/access-mode', (req, res) => {
+  res.json({
+    isLocal: isLocalRequest(req),
+    publicSiteUrl: resolvePublicSiteUrl(req),
+  })
+})
+
+app.get('/api/public/variants/:id', async (req, res) => {
+  const store = await readJson(VARIANTS_PATH, { variants: [] })
+  const variant = (store.variants ?? []).find((v) => v.id === req.params.id)
+  if (!variant) {
+    res.status(404).json({ error: '简历不存在' })
+    return
+  }
+  res.json({
+    id: variant.id,
+    company: variant.company,
+    jobTitle: variant.jobTitle,
+    matchScore: variant.matchScore,
+    resume: variant.resume,
+    meta: variant.meta,
+    createdAt: variant.createdAt,
+    jdSummary: variant.jdSummary,
+    screenshotUrl: variant.screenshotUrl,
+    profileSiteUrl: variant.profileSiteUrl,
+    publicUrl: variant.publicUrl,
+  })
+})
+
+app.post('/api/resume-maker', async (req, res) => {
+  if (!isLocalRequest(req)) {
+    res.status(403).json({ error: '简历制作仅支持本机访问' })
+    return
+  }
+
+  const {
+    jdText = '',
+    screenshotBase64,
+    profile = 'business-expert',
+    resume: clientResume,
+  } = req.body ?? {}
+
+  if (!jdText.trim()) {
+    res.status(400).json({ error: '请填写或粘贴招聘 JD' })
+    return
+  }
+
+  const parsed = parseJdText(jdText)
+  const job = createManualJob({
+    company: parsed.company,
+    title: parsed.title?.trim() || '未命名岗位',
+    description: parsed.description || jdText,
+    requirements: parsed.requirements,
+  })
+  job.pasteChannel = parsed.channel ?? 'other'
+
+  const jobStore = await readJson(JOBS_PATH, { jobs: [] })
+  await writeJson(JOBS_PATH, { jobs: [job, ...(jobStore.jobs ?? [])] })
+  await ensureApplication(job.id, job)
+
+  const baseResume = clientResume ?? (await readJson(RESUME_PATH, null))
+  if (!baseResume) {
+    res.status(400).json({ error: '简历数据缺失' })
+    return
+  }
+
+  const optimized = optimizeResumeForJob(baseResume, job, { profile })
+  const variant = createVariantRecord(baseResume, job, optimized)
+
+  const profileSiteUrl = resolvePublicSiteUrl(req)
+  variant.publicUrl = resolveResumePublicUrl(req, variant.id)
+  variant.profileSiteUrl = profileSiteUrl || undefined
+  variant.jdSummary = jdText.trim().slice(0, 500)
+
+  if (screenshotBase64) {
+    try {
+      variant.screenshotUrl = await saveScreenshotBase64(screenshotBase64, variant.id)
+    } catch (err) {
+      res.status(400).json({ error: err.message || '截图保存失败' })
+      return
+    }
+  }
+
+  if (profileSiteUrl && variant.resume?.summary) {
+    variant.resume = {
+      ...variant.resume,
+      summary: `${variant.resume.summary}\n\n个人主页：${profileSiteUrl}`,
+    }
+  }
+
+  const variantStore = await readJson(VARIANTS_PATH, { variants: [] })
+  const variants = [
+    variant,
+    ...(variantStore.variants ?? []).filter((v) => v.jobId !== job.id),
+  ]
+  await writeJson(VARIANTS_PATH, { variants })
+
+  res.json({ ok: true, variant, job })
+})
+
 app.listen(PORT, () => {
   console.log(`[chenmo-api] http://localhost:${PORT}`)
   Promise.all([

@@ -238,8 +238,8 @@ export default function ResumeEditor({ resume, onChange }: ResumeEditorProps) {
           <Field label="电话" value={resume.basicInfo.phone} onChange={(v) => updateBasic('phone', v)} />
           <Field label="邮箱" value={resume.basicInfo.email} onChange={(v) => updateBasic('email', v)} />
           <Field label="地点" value={resume.basicInfo.location} onChange={(v) => updateBasic('location', v)} />
+          <Field label="学历" value={resume.basicInfo.degree ?? ''} onChange={(v) => updateBasic('degree', v)} />
           <Field label="个人网站" value={resume.basicInfo.website ?? ''} onChange={(v) => updateBasic('website', v)} />
-          <Field label="GitHub" value={resume.basicInfo.github ?? ''} onChange={(v) => updateBasic('github', v)} />
         </div>
       </section>
 

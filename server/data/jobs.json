@@ -1,10 +1,12 @@
 {
-  "lastRefreshAt": "2026-08-04T09:46:16.373Z",
+  "lastRefreshAt": "2026-08-05T13:44:57.633Z",
   "lastRefreshStatus": "partial",
   "lastRefreshFetched": 0,
   "lastRefreshBossFetched": 0,
+  "lastRefreshLiepinFetched": 0,
   "lastRefreshErrors": [
-    "Boss直聘: 未抓到岗位，Cookie 可能过期或页面结构变化，请更新 server/config/boss.json 中的 cookie"
+    "Boss直聘: Boss 直聘未配置或未启用，请配置 server/config/boss.json",
+    "猎聘: 猎聘未配置或未启用，请配置 server/config/liepin.json"
   ],
   "jobs": [
     {
@@ -45,7 +47,10 @@
       ],
       "source": "manual",
       "fetchedAt": "2026-08-03T11:39:42.610Z",
-      "status": "active"
+      "status": "active",
+      "isOutsourcing": false,
+      "outsourcingConfidence": "direct",
+      "outsourcingReason": ""
     },
     {
       "id": "65d4884a-356d-4daa-9ab0-d6be63b54382",
@@ -100,7 +105,10 @@
       ],
       "source": "manual",
       "fetchedAt": "2026-08-03T11:39:42.589Z",
-      "status": "active"
+      "status": "active",
+      "isOutsourcing": false,
+      "outsourcingConfidence": "direct",
+      "outsourcingReason": ""
     }
   ]
 }

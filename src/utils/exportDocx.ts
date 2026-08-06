@@ -63,8 +63,8 @@ export async function exportToWord(resume: Resume, filename?: string): Promise<v
     basicInfo.phone,
     basicInfo.email,
     basicInfo.location,
+    basicInfo.degree,
     basicInfo.website,
-    basicInfo.github,
   ].filter(Boolean)
 
   const children: Paragraph[] = [
@@ -125,11 +125,10 @@ export async function exportToWord(resume: Resume, filename?: string): Promise<v
   if (resume.educations.length > 0) {
     children.push(sectionTitle('学历'))
     for (const edu of resume.educations) {
+      const line = [edu.school, edu.major].filter(Boolean).join('  ·  ')
       if (edu.deemphasized) {
-        const line = [edu.school, edu.degree, edu.major].filter(Boolean).join('  ·  ')
         children.push(mutedLine(line))
       } else {
-        const line = [edu.degree, edu.major, edu.school].filter(Boolean).join('  ·  ')
         children.push(bodyText(line))
       }
       if (edu.startDate || edu.endDate) {

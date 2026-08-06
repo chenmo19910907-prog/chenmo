@@ -191,6 +191,14 @@ export interface ResumeVariant {
   resume: import('./resume').Resume
   meta: OptimizeMeta
   createdAt: string
+  /** 招聘 JD 摘要（简历制作） */
+  jdSummary?: string
+  /** 招聘信息截图 URL */
+  screenshotUrl?: string
+  /** 该份简历的公开访问地址 */
+  publicUrl?: string
+  /** 个人主页外网地址（附在简历中） */
+  profileSiteUrl?: string
 }
 
 export interface VariantStore {

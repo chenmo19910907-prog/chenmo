@@ -8,6 +8,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+.tools
 dist
 dist-ssr
 *.local
@@ -28,3 +29,5 @@ server/config/boss.json
 server/config/liepin.json
 server/config/llm.json
 server/data/boss-debug.png
+server/data/screenshots/*
+!server/data/screenshots/.gitkeep

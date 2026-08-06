@@ -28,8 +28,8 @@ export default function ResumeView({ resume }: ResumeViewProps) {
     { label: '电话', value: basicInfo.phone },
     { label: '邮箱', value: basicInfo.email },
     { label: '地点', value: basicInfo.location },
+    { label: '学历', value: basicInfo.degree },
     { label: '网站', value: basicInfo.website, href: basicInfo.website },
-    { label: 'GitHub', value: basicInfo.github, href: basicInfo.github },
   ].filter((item) => item.value)
 
   return (
@@ -153,40 +153,35 @@ export default function ResumeView({ resume }: ResumeViewProps) {
       {resume.educations.length > 0 && (
         <Section title="学历">
           <div className="space-y-2">
-            {resume.educations.map((edu) =>
-              edu.deemphasized ? (
-                <div key={edu.id} className="text-xs text-slate-400">
+            {resume.educations.map((edu) => (
+              <div
+                key={edu.id}
+                className={
+                  edu.deemphasized
+                    ? 'text-xs text-slate-400'
+                    : 'text-sm text-slate-600'
+                }
+              >
+                <span className={edu.deemphasized ? '' : 'font-medium text-slate-800'}>
                   {edu.school}
-                  <span className="mx-1">·</span>
-                  {edu.degree}
-                  {edu.major && (
-                    <>
-                      <span className="mx-1">·</span>
+                </span>
+                {edu.major && (
+                  <>
+                    <span className="mx-1.5 text-slate-400">·</span>
+                    <span className={edu.deemphasized ? '' : 'text-slate-700'}>
                       {edu.major}
-                    </>
-                  )}
-                </div>
-              ) : (
-                <div key={edu.id} className="text-sm text-slate-600">
-                  <span className="font-medium text-slate-800">{edu.degree}</span>
-                  <span className="mx-1.5 text-slate-400">·</span>
-                  {edu.major}
-                  {edu.school && (
-                    <>
-                      <span className="mx-1.5 text-slate-400">·</span>
-                      <span className="text-slate-500">{edu.school}</span>
-                    </>
-                  )}
-                  {(edu.startDate || edu.endDate) && (
-                    <span className="ml-2 text-slate-400">
-                      {edu.startDate}
-                      {edu.startDate && edu.endDate && ' - '}
-                      {edu.endDate}
                     </span>
-                  )}
-                </div>
-              ),
-            )}
+                  </>
+                )}
+                {(edu.startDate || edu.endDate) && (
+                  <span className="ml-2 text-slate-400">
+                    {edu.startDate}
+                    {edu.startDate && edu.endDate && ' - '}
+                    {edu.endDate}
+                  </span>
+                )}
+              </div>
+            ))}
           </div>
         </Section>
       )}
