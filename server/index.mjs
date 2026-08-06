@@ -41,6 +41,8 @@ const APPLICATIONS_PATH = path.join(__dirname, 'data/applications.json')
 const RESUME_PATH = path.join(__dirname, '../src/data/resume.json')
 
 const PORT = Number(process.env.CHENMO_API_PORT) || 3456
+const DIST_PATH = path.join(__dirname, '../dist')
+const IS_PRODUCTION = process.env.NODE_ENV === 'production'
 
 async function readJson(filePath, fallback) {
   try {
@@ -92,6 +94,7 @@ async function ensureApplication(jobId, job) {
 }
 
 const app = express()
+app.set('trust proxy', true)
 app.use(cors())
 app.use(express.json({ limit: '2mb' }))
 
@@ -643,8 +646,19 @@ const SCREENSHOTS_DIR = path.join(__dirname, 'data/screenshots')
 const PUBLIC_SITE_URL = process.env.CHENMO_PUBLIC_URL || ''
 
 function isLocalRequest(req) {
+  const host = (req.get('host') || '').toLowerCase().split(':')[0]
   const ip = req.ip || req.socket?.remoteAddress || ''
-  const host = (req.get('host') || '').toLowerCase()
+
+  // 经 Cloudflare Tunnel 等反代时，外网请求 IP 可能仍是 127.0.0.1，以 Host 为准
+  if (
+    host &&
+    !host.startsWith('localhost') &&
+    !host.startsWith('127.0.0.1') &&
+    host !== '[::1]'
+  ) {
+    return false
+  }
+
   return (
     ip === '127.0.0.1' ||
     ip === '::1' ||
@@ -787,15 +801,39 @@ app.post('/api/resume-maker', async (req, res) => {
   res.json({ ok: true, variant, job })
 })
 
-app.listen(PORT, () => {
-  console.log(`[chenmo-api] http://localhost:${PORT}`)
-  Promise.all([
-    initLlmConfigIfMissing(),
-    initBossConfigIfMissing(),
-    initLiepinConfigIfMissing(),
-  ])
-    .then(() => startScheduler())
-    .catch((err) => {
-      console.error('[chenmo-api] init/scheduler start failed:', err)
-    })
+async function startServer() {
+  if (IS_PRODUCTION) {
+    try {
+      await fs.access(DIST_PATH)
+      app.use(express.static(DIST_PATH))
+      app.get(/^(?!\/api).*/, (_req, res) => {
+        res.sendFile(path.join(DIST_PATH, 'index.html'))
+      })
+      console.log(`[chenmo] serving static files from ${DIST_PATH}`)
+    } catch {
+      console.warn(`[chenmo] dist not found at ${DIST_PATH}, run npm run build first`)
+    }
+  }
+
+  app.listen(PORT, () => {
+    const publicUrl = PUBLIC_SITE_URL || '(set CHENMO_PUBLIC_URL for share links)'
+    console.log(`[chenmo] http://localhost:${PORT}`)
+    if (IS_PRODUCTION) {
+      console.log(`[chenmo] public url: ${publicUrl}`)
+    }
+    Promise.all([
+      initLlmConfigIfMissing(),
+      initBossConfigIfMissing(),
+      initLiepinConfigIfMissing(),
+    ])
+      .then(() => startScheduler())
+      .catch((err) => {
+        console.error('[chenmo] init/scheduler start failed:', err)
+      })
+  })
+}
+
+startServer().catch((err) => {
+  console.error('[chenmo] failed to start:', err)
+  process.exit(1)
 })

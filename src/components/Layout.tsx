@@ -19,42 +19,42 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-slate-100">
-      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 px-4 py-4">
-          <Link to="/" className="group">
-            <h1 className="text-xl font-bold text-slate-900 group-hover:text-blue-700">
-              陈墨
-            </h1>
-            <p className="text-sm text-slate-500">
-              {isLocal ? '个人介绍 · 本机模式' : '个人介绍'}
-            </p>
-          </Link>
+      {isLocal && (
+        <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/90 backdrop-blur">
+          <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 px-4 py-4">
+            <Link to="/" className="group">
+              <h1 className="text-xl font-bold text-slate-900 group-hover:text-blue-700">
+                陈墨
+              </h1>
+              <p className="text-sm text-slate-500">个人介绍 · 本机模式</p>
+            </Link>
 
-          {!loading && (
-            <nav className="flex flex-wrap gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1">
-              {navItems.map((item) => {
-                const active =
-                  item.to === '/'
-                    ? location.pathname === '/'
-                    : location.pathname.startsWith(item.to)
-                return (
-                  <Link
-                    key={item.to}
-                    to={item.to}
-                    className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
-                      active
-                        ? 'bg-white text-blue-700 shadow-sm'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                )
-              })}
-            </nav>
-          )}
-        </div>
-      </header>
+            {!loading && (
+              <nav className="flex flex-wrap gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1">
+                {navItems.map((item) => {
+                  const active =
+                    item.to === '/'
+                      ? location.pathname === '/'
+                      : location.pathname.startsWith(item.to)
+                  return (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
+                        active
+                          ? 'bg-white text-blue-700 shadow-sm'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      {item.label}
+                    </Link>
+                  )
+                })}
+              </nav>
+            )}
+          </div>
+        </header>
+      )}
 
       <Outlet />
     </div>
