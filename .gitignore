@@ -7,11 +7,9 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
 .tools/node-v22.12.0-darwin-arm64/bin/node
 dist-ssr
 *.local
-.env
 
 # Editor directories and files
 .vscode/*
@@ -24,8 +22,4 @@ dist-ssr
 *.sln
 *.sw?
 
-# 本地密钥与 Cookie（勿提交）
-server/config/boss.json
-server/config/liepin.json
-server/config/llm.json
 server/data/boss-debug.png

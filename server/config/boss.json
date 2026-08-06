@@ -1,0 +1,7 @@
+{
+  "enabled": false,
+  "city": "101010100",
+  "queries": ["语音房 测试", "测试工程师 社交", "QA 海外"],
+  "cookie": "",
+  "note": "在浏览器登录 zhipin.com 后，从 DevTools 复制 Cookie 到 cookie 字段，或设置环境变量 CHENMO_BOSS_COOKIE"
+}
