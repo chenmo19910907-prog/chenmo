@@ -8,10 +8,6 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-.tools/natapp
-.tools/cloudflared
-.tools/cloudflared.tgz
-.tools/node-v22.12.0-darwin-arm64/bin/node
 dist
 dist-ssr
 *.local
