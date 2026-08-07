@@ -137,6 +137,30 @@ export function fetchVariants(): Promise<VariantStore> {
   return request('/variants')
 }
 
+export function fetchVariantById(id: string): Promise<ResumeVariant> {
+  return request(`/variants/${id}`)
+}
+
+export function fetchPublicVariant(id: string): Promise<ResumeVariant> {
+  return request(`/public/variants/${id}`)
+}
+
+export function fetchAccessMode(): Promise<{ isLocal: boolean; publicSiteUrl: string }> {
+  return request('/access-mode')
+}
+
+export function createResumeFromJd(input: {
+  jdText: string
+  screenshotBase64?: string
+  resume: Resume
+  profile?: ResumeProfile
+}): Promise<{ ok: boolean; variant: ResumeVariant; job: JobStore['jobs'][0] }> {
+  return request('/resume-maker', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
 export function parseJd(text: string): Promise<{ parsed: ParsedJd }> {
   return request('/jobs/parse-jd', { method: 'POST', body: JSON.stringify({ text }) })
 }

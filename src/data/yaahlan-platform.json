@@ -1,0 +1,41 @@
+{
+  "title": "Yaahlan 业务智能工具平台 Agent",
+  "summary": "使用 Cursor 从零搭建的端到端智能测试平台，聚合知识库、AI 用例生成、造数/抓包验收与测试报告能力，供研发/产品/测试全项目使用。",
+  "sections": [
+    {
+      "title": "平台定位",
+      "content": "从房间玩法与活动测试痛点出发，将业务经验沉淀为可复用的 Agent 能力，形成「懂业务 → 测玩法 → 沉淀规则 → Cursor Agent 提效」闭环。",
+      "bullets": [
+        "25 个一级模块、215+ 项可执行能力",
+        "业务侧约 50% 同事使用，日调用 61→142 次（2.3 倍）",
+        "从业余 AI 脚本试水，逐步演进为正式工作中的核心提效平台"
+      ]
+    },
+    {
+      "title": "核心能力",
+      "content": "基于 Cursor Agent Skills + 钉钉 MCP + Python 工具链构建。",
+      "bullets": [
+        "AI 用例：钉钉 PRD → Agent 解析 → 规则/知识库补全 → 结构化用例输出",
+        "知识库：testcase-kb / prd-kb / bug-kb / verified-kb",
+        "造数验收：MOA 造 VIP/房间/礼物等、Tunnel 抓包、ADB 录制脚本",
+        "真机自动化：Midscene AI 视觉驱动 + P0 autotest 与 HTML 报告"
+      ]
+    },
+    {
+      "title": "相关链接",
+      "content": "以下链接可在本机环境或授权网络中访问平台与文档。",
+      "links": [
+        {
+          "label": "项目仓库（auto-generate-testcase）",
+          "url": "https://github.com/chenmo19910907-prog/chenmo",
+          "description": "智能测试工具平台相关代码与文档"
+        },
+        {
+          "label": "个人主页（外网）",
+          "url": "/",
+          "description": "本网站外网地址，可附在定制简历中供招聘方浏览"
+        }
+      ]
+    }
+  ]
+}

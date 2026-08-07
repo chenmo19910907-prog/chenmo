@@ -11,6 +11,10 @@ node_modules
 dist
 dist-ssr
 *.local
+.env
+
+# 便携 Node 二进制（保留 lib，忽略 bin/node）
+.tools/node-v22.12.0-darwin-arm64/bin/node
 
 # Editor directories and files
 .vscode/*

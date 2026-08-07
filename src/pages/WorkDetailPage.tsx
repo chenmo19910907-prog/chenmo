@@ -39,10 +39,10 @@ export default function WorkDetailPage() {
     <main className="px-4 py-8">
       <article className="mx-auto max-w-3xl">
         <Link
-          to="/works"
+          to="/"
           className="mb-6 inline-block text-sm text-blue-600 hover:underline"
         >
-          ← 全部工作经历
+          ← 返回个人介绍
         </Link>
 
         <header className="rounded-2xl bg-gradient-to-br from-blue-700 to-blue-900 p-8 text-white shadow-lg md:p-10">
@@ -132,6 +132,22 @@ export default function WorkDetailPage() {
                       </span>
                     ))}
                   </div>
+                </DetailSection>
+              )}
+
+              {work.id === 'work-0' && (
+                <DetailSection title="Yaahlan 智能工具平台 Agent">
+                  <p className="leading-relaxed text-slate-700">
+                    陌陌阶段核心成果：使用 Cursor 从零搭建业务智能工具平台 Agent，聚合知识库、AI
+                    用例生成、造数/抓包验收与测试报告能力，25 模块 / 215+ 能力，业务侧约 50%
+                    同事使用。
+                  </p>
+                  <Link
+                    to="/works/work-0/platform"
+                    className="mt-4 inline-flex items-center gap-2 rounded-lg bg-violet-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-violet-700"
+                  >
+                    查看平台详细介绍与相关链接 →
+                  </Link>
                 </DetailSection>
               )}
             </>

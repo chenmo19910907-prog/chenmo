@@ -8,6 +8,11 @@
     "dev:all": "concurrently \"npm run server\" \"npm run dev\"",
     "server": "node server/index.mjs",
     "build": "tsc -b && vite build",
+    "start": "NODE_ENV=production node server/index.mjs",
+    "start:public": "bash scripts/start-public.sh",
+    "start:natapp": "bash scripts/start-natapp.sh",
+    "tunnel:install": "bash scripts/install-cloudflared.sh",
+    "natapp:install": "bash scripts/install-natapp.sh",
     "lint": "oxlint",
     "preview": "vite preview"
   },

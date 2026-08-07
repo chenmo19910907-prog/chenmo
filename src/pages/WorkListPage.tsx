@@ -27,11 +27,8 @@ export default function WorkListPage() {
         </div>
 
         <div className="mt-8 text-center">
-          <Link
-            to="/"
-            className="text-sm text-blue-600 hover:underline"
-          >
-            ← 返回简历概览
+          <Link to="/" className="text-sm text-blue-600 hover:underline">
+            ← 返回个人介绍
           </Link>
         </div>
       </div>
