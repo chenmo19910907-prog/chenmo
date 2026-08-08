@@ -29,7 +29,7 @@ function PlatformDemoLinks() {
 
   return (
     <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
-      <p className="text-sm font-medium text-slate-800">本地演示链接</p>
+      <p className="text-sm font-medium text-slate-800">在线演示链接</p>
       <ul className="mt-3 space-y-3">
         {links.map((link) => (
           <li key={link.url}>

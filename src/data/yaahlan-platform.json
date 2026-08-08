@@ -4,12 +4,12 @@
   "demoLinks": [
     {
       "label": "Web Agent 对话入口",
-      "url": "http://127.0.0.1:18766/chat.html",
-      "description": "内网对话工作台，支持 MOA 造数、Tunnel 抓包、用例生成等"
+      "url": "https://chenmo19910907-prog.github.io/yaahlanAgent/web-agent/",
+      "description": "在线界面演示（新建对话场景）；完整 MOA / Tunnel / 用例生成需内网服务"
     },
     {
       "label": "Keynote 产品演示",
-      "url": "http://127.0.0.1:18766/keynote",
+      "url": "https://chenmo19910907-prog.github.io/yaahlanAgent/keynote/",
       "description": "全屏产品演示：UI 细节、功能亮点、智能工厂与用量数据"
     }
   ],
@@ -38,12 +38,12 @@
       "links": [
         {
           "label": "Web Agent 对话入口",
-          "url": "http://127.0.0.1:18766/chat.html",
-          "description": "内网对话工作台，支持 MOA 造数、Tunnel 抓包、用例生成等"
+          "url": "https://chenmo19910907-prog.github.io/yaahlanAgent/web-agent/",
+          "description": "在线界面演示；完整能力需内网 Web Agent 服务"
         },
         {
           "label": "Keynote 产品演示",
-          "url": "http://127.0.0.1:18766/keynote",
+          "url": "https://chenmo19910907-prog.github.io/yaahlanAgent/keynote/",
           "description": "全屏产品演示：UI 细节、功能亮点、智能工厂与用量数据"
         }
       ]
