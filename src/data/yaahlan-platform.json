@@ -29,32 +29,6 @@
       }
     },
     {
-      "label": "用 Cursor 搭建智能工具平台",
-      "local": {
-        "label": "用 Cursor 搭建智能工具平台",
-        "url": "http://127.0.0.1:18766/platform-guide",
-        "description": "从 MOA 到 Admin、Tunnel、钉钉文档、ADB 自动化的完整搭建历程"
-      },
-      "public": {
-        "label": "用 Cursor 搭建智能工具平台",
-        "url": "https://chenmo19910907-prog.github.io/yaahlanAgent/platform-guide/",
-        "description": "从 MOA 到 Admin、Tunnel、钉钉文档、ADB 自动化的完整搭建历程"
-      }
-    },
-    {
-      "label": "PK 提款机：从零到 MOA 与自动化",
-      "local": {
-        "label": "PK 提款机：从零到 MOA 与自动化",
-        "url": "http://127.0.0.1:18766/keynote/pk-atm-guide",
-        "description": "真实协作案例：读 PRD → 抓包落 MOA → 对话迭代 → 赛况/返钻/提款排名验收"
-      },
-      "public": {
-        "label": "PK 提款机：从零到 MOA 与自动化",
-        "url": "https://chenmo19910907-prog.github.io/yaahlanAgent/keynote/pk-atm-guide/",
-        "description": "真实协作案例：读 PRD → 抓包落 MOA → 对话迭代 → 赛况/返钻/提款排名验收"
-      }
-    },
-    {
       "label": "家族 PK 测试 Showcase",
       "local": {
         "label": "家族 PK 测试 Showcase",
