@@ -1,0 +1,16 @@
+[Unit]
+Description=Chenmo Resume Server
+After=network.target
+
+[Service]
+Type=simple
+User=chenmo
+Group=chenmo
+WorkingDirectory=/opt/chenmo
+EnvironmentFile=/opt/chenmo/.env
+ExecStart=/usr/bin/node server/index.mjs
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -182,8 +182,14 @@ export function deleteVariant(id: string): Promise<{ ok: boolean }> {
   return request(`/variants/${id}`, { method: 'DELETE' })
 }
 
-export function fetchPublicVariant(id: string): Promise<ResumeVariant> {
-  return request(`/public/variants/${id}`)
+export async function fetchPublicVariant(id: string): Promise<ResumeVariant> {
+  try {
+    return await request(`/public/variants/${id}`)
+  } catch {
+    const res = await fetch(`${import.meta.env.BASE_URL}variants/${id}.json`)
+    if (!res.ok) throw new Error('简历不存在或已失效')
+    return res.json() as Promise<ResumeVariant>
+  }
 }
 
 export function fetchAccessMode(): Promise<{ isLocal: boolean; publicSiteUrl: string }> {

@@ -97,23 +97,20 @@ npx playwright install chromium
 - Express + node-cron + cheerio（应聘助手 API）
 - docx + file-saver（Word 导出）
 
-## 本机外网访问
+## 外网访问
 
-### 方案 A：国内免费穿透（推荐，无需买域名）
+两种方案任选（详见对应文档）：
 
-使用 [natapp](https://natapp.cn) 免费隧道，**不用买域名、不用改 DNS**。
-
-1. 注册 natapp → **我的隧道** → **购买隧道** → 选「**免费隧道**」
-2. 复制 **authtoken**
-3. 双击运行 **`一键启动国内穿透.command`**，粘贴 authtoken
-4. 终端会显示外网地址，如 `https://xxxxx.natappfree.cc`
+| 方案 | 适合 | 文档 |
+|------|------|------|
+| **GitHub Pages** | 免费固定地址，国内多数可直接访问 | [deploy/github-pages.md](deploy/github-pages.md) |
+| **Cloudflare Pages** | 免费，海外访问更好 | [deploy/cloudflare-pages.md](deploy/cloudflare-pages.md) |
+| **阿里云轻量服务器** | 完整后端 + 国内最稳 | [deploy/README.md](deploy/README.md) |
 
 ```bash
-npm run start:natapp
+# GitHub Pages 本地构建验证
+npm run build:gh-pages
+
+# 阿里云首次部署
+ALIYUN_HOST=root@你的公网IP bash scripts/deploy-aliyun.sh
 ```
-
-> 免费版地址可能每次重启变化；本机 `localhost:3456` 始终可用完整功能。
-
-### 方案 B：Cloudflare Tunnel + 自有域名
-
-需拥有域名并将 NS 改到 Cloudflare，见 `deploy/cloudflared.yml.example`。

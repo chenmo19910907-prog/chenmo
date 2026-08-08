@@ -11,4 +11,4 @@ if [ -z "${NATAPP_AUTHTOKEN:-}" ]; then
   echo "请先在 $ROOT/.env 中设置 NATAPP_AUTHTOKEN"
   exit 1
 fi
-exec "$(dirname "$0")/natapp" -authtoken="$NATAPP_AUTHTOKEN"
+exec "$(dirname "$0")/natapp" -log=stdout -loglevel=INFO -authtoken="$NATAPP_AUTHTOKEN"
