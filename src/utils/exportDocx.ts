@@ -1,59 +1,215 @@
+/**
+ * Word 简历导出
+ * @see ./resumeExportStandards.ts 版式规范
+ */
 import {
   AlignmentType,
   BorderStyle,
   Document,
-  HeadingLevel,
   Packer,
   Paragraph,
-  TextRun,
+  TabStopType,
 } from 'docx'
 import { saveAs } from 'file-saver'
-import type { Resume } from '../types/resume'
+import type { Resume, WorkExperience } from '../types/resume'
+import { visibleEducations } from './resumeEditText'
+import { getWorkDisplayCompany } from './workDisplay'
+import { cleanResumeSummary, normalizeDisplayTitle } from './cleanResumeSummary'
+import { toReadableResumeText, splitSummaryParagraphs } from './readableResumeText'
+import {
+  BODY_LINE_SPACING,
+  PARAGRAPH_SPACING,
+  RESUME_BULLET,
+  RESUME_COLOR,
+  RESUME_SIZE,
+  resumeDocumentStyles,
+  resumeRun,
+} from './resumeDocxTheme'
+
+/** 右对齐日期/学位用的制表位（A4 默认页边距下内容区右缘） */
+const TAB_RIGHT = 9026
+
+type WorkParagraphOptions = {
+  spacing?: {
+    before?: number
+    after?: number
+    line?: number
+    lineRule?: (typeof BODY_LINE_SPACING)['lineRule']
+  }
+  indent?: { left?: number; hanging?: number }
+  tabStops?: { type: (typeof TabStopType)[keyof typeof TabStopType]; position: number }[]
+  children: ReturnType<typeof resumeRun>[]
+}
+
+function workParagraph(props: WorkParagraphOptions): Paragraph {
+  return new Paragraph({
+    spacing: props.spacing,
+    tabStops: props.tabStops,
+    indent: props.indent,
+    children: props.children,
+  })
+}
 
 function sectionTitle(text: string): Paragraph {
   return new Paragraph({
-    heading: HeadingLevel.HEADING_2,
-    spacing: { before: 320, after: 160 },
+    spacing: {
+      before: PARAGRAPH_SPACING.sectionBefore,
+      after: PARAGRAPH_SPACING.sectionAfter,
+    },
+    indent: { left: 180 },
     border: {
-      bottom: { style: BorderStyle.SINGLE, size: 6, color: '2563EB' },
+      left: {
+        style: BorderStyle.SINGLE,
+        size: 18,
+        color: '2563EB',
+        space: 8,
+      },
     },
     children: [
-      new TextRun({
+      resumeRun({
         text,
         bold: true,
-        size: 28,
-        color: '1E40AF',
+        size: RESUME_SIZE.section,
+        color: RESUME_COLOR.section,
+        characterSpacing: 0,
       }),
     ],
   })
 }
 
-function bodyText(text: string): Paragraph {
+function bodyText(text: string, indent = 0, after: number = PARAGRAPH_SPACING.bodyAfter): Paragraph {
   return new Paragraph({
-    spacing: { after: 120 },
-    children: [new TextRun({ text, size: 22 })],
+    spacing: { after, ...BODY_LINE_SPACING },
+    indent: indent ? { left: indent } : undefined,
+    children: [resumeRun({ text })],
   })
 }
 
-function bulletItem(text: string): Paragraph {
+function bulletItem(text: string, indent = 280): Paragraph {
   return new Paragraph({
-    spacing: { after: 80 },
-    bullet: { level: 0 },
-    children: [new TextRun({ text, size: 22 })],
+    spacing: { after: PARAGRAPH_SPACING.bulletAfter, ...BODY_LINE_SPACING },
+    indent: { left: indent, hanging: 200 },
+    children: [
+      resumeRun({
+        text: `${RESUME_BULLET.char}\t`,
+        color: RESUME_BULLET.color,
+        size: RESUME_BULLET.size,
+        characterSpacing: 0,
+      }),
+      resumeRun({ text }),
+    ],
   })
 }
 
-function boldLine(text: string): Paragraph {
+function headerDivider(): Paragraph {
   return new Paragraph({
-    spacing: { after: 80 },
-    children: [new TextRun({ text, bold: true, size: 24 })],
+    spacing: { after: PARAGRAPH_SPACING.headerAfter },
+    border: {
+      bottom: { style: BorderStyle.SINGLE, size: 4, color: 'F1F5F9' },
+    },
+    children: [resumeRun({ text: '' })],
   })
 }
 
-function mutedLine(text: string): Paragraph {
+function workExperienceParagraphs(work: WorkExperience, isFirst: boolean): Paragraph[] {
+  const company = getWorkDisplayCompany(work)
+  const period = `${work.startDate} — ${work.endDate}`
+  const paragraphs: Paragraph[] = [
+    workParagraph({
+      spacing: {
+        before: isFirst ? 0 : PARAGRAPH_SPACING.workBefore,
+        after: PARAGRAPH_SPACING.workCompanyAfter,
+      },
+      tabStops: [{ type: TabStopType.RIGHT, position: TAB_RIGHT }],
+      children: [
+        resumeRun({
+          text: company,
+          bold: true,
+          size: RESUME_SIZE.company,
+          color: RESUME_COLOR.heading,
+          characterSpacing: 0,
+        }),
+        resumeRun({
+          text: `\t${period}`,
+          size: RESUME_SIZE.date,
+          color: RESUME_COLOR.muted,
+          characterSpacing: 0,
+        }),
+      ],
+    }),
+    workParagraph({
+      spacing: { after: PARAGRAPH_SPACING.workPositionAfter, ...BODY_LINE_SPACING },
+      children: [
+        resumeRun({
+          text: work.position,
+          size: RESUME_SIZE.position,
+          color: RESUME_COLOR.title,
+          characterSpacing: 0,
+        }),
+      ],
+    }),
+  ]
+
+  const roleSummary = work.description?.trim()
+  if (roleSummary) {
+    paragraphs.push(
+      workParagraph({
+        spacing: { after: PARAGRAPH_SPACING.workSummaryAfter, ...BODY_LINE_SPACING },
+        children: [resumeRun({ text: toReadableResumeText(roleSummary) })],
+      }),
+    )
+  }
+
+  const highlights = work.highlights.slice(0, 5)
+  for (const item of highlights) {
+    paragraphs.push(
+      workParagraph({
+        spacing: { after: PARAGRAPH_SPACING.bulletAfter, ...BODY_LINE_SPACING },
+        indent: { left: 280, hanging: 200 },
+        children: [
+          resumeRun({
+            text: `${RESUME_BULLET.char}\t`,
+            color: RESUME_BULLET.color,
+            size: RESUME_BULLET.size,
+            characterSpacing: 0,
+          }),
+          resumeRun({ text: toReadableResumeText(item) }),
+        ],
+      }),
+    )
+  }
+
+  return paragraphs
+}
+
+function educationParagraph(school: string, major: string | undefined, degree: string | undefined): Paragraph {
+  const schoolLine = [school, major].filter(Boolean).join(' · ')
+  const children = [
+    resumeRun({
+      text: schoolLine,
+      bold: true,
+      color: RESUME_COLOR.heading,
+      characterSpacing: 0,
+    }),
+  ]
+
+  if (degree?.trim()) {
+    children.push(
+      resumeRun({
+        text: `\t${degree.trim()}`,
+        size: RESUME_SIZE.date,
+        color: RESUME_COLOR.muted,
+        characterSpacing: 0,
+      }),
+    )
+  }
+
   return new Paragraph({
-    spacing: { after: 120 },
-    children: [new TextRun({ text, size: 20, color: '64748B' })],
+    spacing: { after: 80, ...BODY_LINE_SPACING },
+    tabStops: degree?.trim()
+      ? [{ type: TabStopType.RIGHT, position: TAB_RIGHT }]
+      : undefined,
+    children,
   })
 }
 
@@ -64,7 +220,6 @@ export async function exportToWord(resume: Resume, filename?: string): Promise<v
     basicInfo.email,
     basicInfo.location,
     basicInfo.degree,
-    basicInfo.website,
   ].filter(Boolean)
 
   const children: Paragraph[] = [
@@ -72,92 +227,100 @@ export async function exportToWord(resume: Resume, filename?: string): Promise<v
       alignment: AlignmentType.CENTER,
       spacing: { after: 80 },
       children: [
-        new TextRun({ text: basicInfo.name, bold: true, size: 48 }),
+        resumeRun({
+          text: basicInfo.name,
+          bold: true,
+          size: RESUME_SIZE.name,
+          color: RESUME_COLOR.heading,
+          characterSpacing: 0,
+        }),
       ],
     }),
     new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { after: 80 },
       children: [
-        new TextRun({ text: basicInfo.title, size: 26, color: '475569' }),
+        resumeRun({
+          text: normalizeDisplayTitle(basicInfo.title),
+          size: RESUME_SIZE.title,
+          color: RESUME_COLOR.title,
+          characterSpacing: 0,
+        }),
       ],
     }),
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      spacing: { after: 240 },
+      spacing: { after: basicInfo.website ? 120 : 0 },
       children: [
-        new TextRun({ text: contactParts.join('  |  '), size: 20, color: '64748B' }),
+        resumeRun({
+          text: contactParts.join('  ·  '),
+          size: RESUME_SIZE.contact,
+          color: RESUME_COLOR.title,
+          characterSpacing: 0,
+        }),
       ],
     }),
-    sectionTitle('个人简介'),
-    bodyText(resume.summary),
   ]
+
+  if (basicInfo.website?.trim()) {
+    const displayUrl = basicInfo.website.replace(/^https?:\/\//, '')
+    children.push(
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 0, ...BODY_LINE_SPACING },
+        children: [
+          resumeRun({
+            text: '更多项目与作品见个人主页：',
+            size: RESUME_SIZE.website,
+            color: RESUME_COLOR.title,
+            characterSpacing: 0,
+          }),
+          resumeRun({
+            text: displayUrl,
+            size: RESUME_SIZE.website,
+            color: RESUME_COLOR.link,
+            underline: {},
+            characterSpacing: 0,
+          }),
+        ],
+      }),
+    )
+  }
+
+  children.push(headerDivider())
+
+  children.push(sectionTitle('个人简介'))
+  const summaryParagraphs = splitSummaryParagraphs(
+    toReadableResumeText(cleanResumeSummary(resume.summary)),
+  )
+  for (const paragraph of summaryParagraphs) {
+    children.push(bodyText(paragraph, 0, PARAGRAPH_SPACING.summaryAfter))
+  }
 
   if (resume.workExperiences.length > 0) {
     children.push(sectionTitle('工作经历'))
-    for (const work of resume.workExperiences) {
-      children.push(
-        boldLine(`${work.company}  ·  ${work.position}`),
-        mutedLine(`${work.startDate} - ${work.endDate}`),
-        bodyText(work.description),
-      )
-      for (const item of work.highlights) {
-        children.push(bulletItem(item))
-      }
-    }
+    resume.workExperiences.forEach((work, index) => {
+      children.push(...workExperienceParagraphs(work, index === 0))
+    })
   }
 
-  if (resume.projectExperiences.length > 0) {
-    children.push(sectionTitle('项目经历'))
-    for (const project of resume.projectExperiences) {
-      children.push(
-        boldLine(`${project.name}  ·  ${project.role}`),
-        mutedLine(`${project.startDate} - ${project.endDate}`),
-        bodyText(project.description),
-        bodyText(`技术栈：${project.techStack.join('、')}`),
-      )
-      for (const item of project.highlights) {
-        children.push(bulletItem(item))
-      }
-    }
-  }
-
-  if (resume.educations.length > 0) {
+  const educations = visibleEducations(resume.educations)
+  if (educations.length > 0) {
     children.push(sectionTitle('学历'))
-    for (const edu of resume.educations) {
-      const line = [edu.school, edu.major].filter(Boolean).join('  ·  ')
-      if (edu.deemphasized) {
-        children.push(mutedLine(line))
-      } else {
-        children.push(bodyText(line))
-      }
-      if (edu.startDate || edu.endDate) {
-        children.push(
-          mutedLine(
-            [edu.startDate, edu.endDate].filter(Boolean).join(' - '),
-          ),
-        )
-      }
-    }
-  }
-
-  if (resume.skillGroups.length > 0) {
-    children.push(sectionTitle('专业技能'))
-    for (const group of resume.skillGroups) {
-      children.push(
-        bodyText(`${group.category}：${group.items.join('、')}`),
-      )
+    for (const edu of educations) {
+      children.push(educationParagraph(edu.school, edu.major, edu.degree))
     }
   }
 
   if (resume.selfEvaluation && resume.selfEvaluation.length > 0) {
     children.push(sectionTitle('自我评价'))
     for (const item of resume.selfEvaluation) {
-      children.push(bulletItem(item))
+      children.push(bulletItem(toReadableResumeText(item), 0))
     }
   }
 
   const doc = new Document({
+    styles: resumeDocumentStyles,
     sections: [{ properties: {}, children }],
   })
 

@@ -15,6 +15,8 @@ export interface PersonalProfile {
   title: string
   tagline: string
   about: string[]
+  hobbies: string[]
+  lifeAbout?: string
   highlights: ProfileHighlight[]
   contact: ProfileContact
 }

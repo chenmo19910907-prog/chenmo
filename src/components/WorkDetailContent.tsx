@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import EditableSection from './EditableSection'
 import platformData from '../data/yaahlan-platform.json'
 import type { WorkDetail, WorkExperience } from '../types/resume'
@@ -13,9 +14,12 @@ import {
   serializeWorkHeader,
 } from '../utils/sectionText'
 import { getWorkDisplayCompany } from '../utils/workDisplay'
+import { resolveWorkHeaderDisplay } from '../utils/workHeaderDisplay'
+import { polishWorkForWeb } from '../utils/polishWorkForWeb'
+import { polishWebText } from '../utils/readableResumeText'
 
 const DEFAULT_PLATFORM_SUMMARY =
-  '陌陌阶段核心成果：使用 Cursor 从零搭建业务智能工具平台 Agent，聚合知识库、AI 用例生成、造数/抓包验收与测试报告能力，25 模块 / 215+ 能力，业务侧约 50% 同事使用。'
+  '陌陌阶段核心成果：使用 Cursor 从零搭建业务智能工具平台 Agent，聚合知识库、AI 用例生成、造数验收、抓包回归与测试报告能力，供研发、产品、测试全项目使用。'
 
 const platformInfo = platformData as YaahlanPlatform
 
@@ -35,7 +39,7 @@ function PlatformDemoLinks() {
               rel="noopener noreferrer"
               className="block rounded-lg border border-violet-200 bg-white px-4 py-3 transition hover:border-violet-400 hover:shadow-sm"
             >
-              <span className="font-medium text-violet-700">{link.label} →</span>
+              <span className="font-medium text-violet-700">{link.label}</span>
               {link.description && (
                 <span className="mt-1 block text-sm text-slate-600">{link.description}</span>
               )}
@@ -70,19 +74,21 @@ function WorkHeaderView({
   tagline?: string
   teamInfo?: string
 }) {
+  const header = resolveWorkHeaderDisplay({ position, tagline, teamInfo })
+
   return (
     <>
-      <p className="text-sm text-blue-100">
+      <p className="text-sm text-blue-200">
         {startDate} — {endDate}
       </p>
       <h1 className="mt-2 text-3xl font-bold md:text-4xl">{company}</h1>
       <p className="mt-2 text-lg text-blue-100">{position}</p>
-      {tagline && (
-        <p className="mt-4 max-w-2xl leading-relaxed text-blue-50">{tagline}</p>
+      {header.showTagline && (
+        <p className="mt-4 max-w-2xl leading-relaxed text-blue-50">{header.tagline}</p>
       )}
-      {teamInfo && (
+      {header.showTeamInfo && (
         <p className="mt-4 inline-block rounded-full bg-white/15 px-4 py-1 text-sm">
-          {teamInfo}
+          {header.teamInfo}
         </p>
       )}
     </>
@@ -144,18 +150,6 @@ function ProjectsView({
   )
 }
 
-function ToolsView({ tools }: { tools: string[] }) {
-  return (
-    <div className="flex flex-wrap gap-2">
-      {tools.map((tool) => (
-        <span key={tool} className="rounded-full bg-blue-50 px-3 py-1 text-sm text-blue-700">
-          {tool}
-        </span>
-      ))}
-    </div>
-  )
-}
-
 interface WorkDetailContentProps {
   work: WorkExperience
   editable?: boolean
@@ -169,7 +163,8 @@ export default function WorkDetailContent({
   editable = false,
   onWorkChange,
 }: WorkDetailContentProps) {
-  const detail = work.detail
+  const displayWork = useMemo(() => polishWorkForWeb(work), [work])
+  const detail = displayWork.detail
   const canEdit = editable && !!onWorkChange
 
   const updateWork = (updater: (current: WorkExperience) => WorkExperience) => {
@@ -184,7 +179,7 @@ export default function WorkDetailContent({
     }))
   }
 
-  const platformSummary = detail?.platformAgentSummary ?? DEFAULT_PLATFORM_SUMMARY
+  const platformSummary = detail?.platformAgentSummary ?? polishWebText(DEFAULT_PLATFORM_SUMMARY)
   const displayCompany = getWorkDisplayCompany(work)
 
   return (
@@ -347,27 +342,6 @@ export default function WorkDetailContent({
               </EditableSection>
             </section>
 
-            {detail.tools.length > 0 && (
-              <section className="mb-10">
-                <SectionTitle title="使用工具" />
-                <EditableSection
-                  editable={canEdit}
-                  title="编辑使用工具"
-                  hint="每行一个工具名称"
-                  getDraft={() => listToLines(detail.tools)}
-                  onSave={(draft) =>
-                    updateDetail((current) => ({
-                      ...current,
-                      tools: linesToList(draft),
-                    }))
-                  }
-                  renderPreview={(draft) => <ToolsView tools={linesToList(draft)} />}
-                >
-                  <ToolsView tools={detail.tools} />
-                </EditableSection>
-              </section>
-            )}
-
             {work.id === 'work-0' && (
               <section className="mb-10 last:mb-0">
                 <SectionTitle title="Yaahlan 智能工具平台 Agent" />
@@ -383,7 +357,7 @@ export default function WorkDetailContent({
                     }))
                   }
                   renderPreview={(draft) => (
-                    <p className="leading-relaxed text-slate-700">{draft.trim()}</p>
+                    <p className="leading-relaxed text-slate-700">{polishWebText(draft.trim())}</p>
                   )}
                 >
                   <p className="leading-relaxed text-slate-700">{platformSummary}</p>
@@ -404,14 +378,14 @@ export default function WorkDetailContent({
                   updateWork((current) => ({ ...current, description: draft.trim() }))
                 }
                 renderPreview={(draft) => (
-                  <p className="text-slate-700">{draft.trim()}</p>
+                  <p className="text-slate-700">{polishWebText(draft.trim())}</p>
                 )}
               >
-                <p className="text-slate-700">{work.description}</p>
+                <p className="text-slate-700">{displayWork.description}</p>
               </EditableSection>
             </section>
 
-            {work.highlights.length > 0 && (
+            {displayWork.highlights.length > 0 && (
               <section className="mb-10 last:mb-0">
                 <SectionTitle title="工作亮点" />
                 <EditableSection
@@ -426,10 +400,10 @@ export default function WorkDetailContent({
                     }))
                   }
                   renderPreview={(draft) => (
-                    <ListSectionView items={linesToList(draft)} />
+                    <ListSectionView items={linesToList(draft).map(polishWebText)} />
                   )}
                 >
-                  <ListSectionView items={work.highlights} />
+                  <ListSectionView items={displayWork.highlights} />
                 </EditableSection>
               </section>
             )}

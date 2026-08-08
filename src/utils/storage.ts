@@ -1,21 +1,119 @@
 import type { PersonalProfile } from '../types/profile'
-import type { Resume } from '../types/resume'
+import type { Resume, SkillGroup, WorkExperience } from '../types/resume'
 import defaultProfile from '../data/profile.json'
 import defaultResume from '../data/resume.json'
+import { buildSummaryFromAbout } from './resumeGenerationStandards'
 
 const STORAGE_KEY = 'chenmo-resume'
 const PROFILE_STORAGE_KEY = 'chenmo-profile'
 
+/** 内置「关于我」更新时递增，用于将浏览器缓存同步到最新默认文案 */
+const PROFILE_CONTENT_VERSION = 7
+
+function isStaleAbout(about: string[] | undefined): boolean {
+  if (!about?.length) return true
+  if (about.length >= 5) return true
+  if (about[0]?.includes('使用 Cursor')) return true
+  return about.some(
+    (paragraph) => paragraph.includes('产品思维：') || paragraph.includes('测试思维：'),
+  )
+}
+
+function buildSummaryFromProfile(profile: PersonalProfile): string {
+  return buildSummaryFromAbout(profile.about)
+}
+
+function isStaleSummary(summary: string | undefined): boolean {
+  if (!summary?.trim()) return true
+  return (
+    summary.includes('产品思维：') ||
+    summary.includes('测试思维：') ||
+    summary.split('\n').filter(Boolean).length >= 5
+  )
+}
+
+/** 工作经历详情页头部文案更新时递增，用于将浏览器缓存同步到最新默认文案 */
+const RESUME_WORK_HEADER_VERSION = 2
+const RESUME_HEADER_VERSION_KEY = 'chenmo-resume-header-version'
+
+function mergeWorkExperiencesFromDefaults(
+  stored: WorkExperience[],
+  defaults: WorkExperience[],
+): { works: WorkExperience[]; changed: boolean } {
+  const defaultById = new Map(defaults.map((work) => [work.id, work]))
+  let changed = false
+  const works = stored.map((work) => {
+    const def = defaultById.get(work.id)
+    if (!def) return work
+
+    const sameContent =
+      work.description === def.description &&
+      JSON.stringify(work.highlights ?? []) === JSON.stringify(def.highlights ?? []) &&
+      JSON.stringify(work.detail ?? null) === JSON.stringify(def.detail ?? null)
+
+    if (sameContent) return work
+    changed = true
+    return {
+      ...work,
+      description: def.description,
+      highlights: def.highlights ?? work.highlights,
+      detail: def.detail ? { ...def.detail } : work.detail,
+    }
+  })
+  return { works, changed }
+}
+
+function syncWorkHeaderVersion(): boolean {
+  try {
+    const current = localStorage.getItem(RESUME_HEADER_VERSION_KEY)
+    if (current === String(RESUME_WORK_HEADER_VERSION)) return false
+    localStorage.setItem(RESUME_HEADER_VERSION_KEY, String(RESUME_WORK_HEADER_VERSION))
+    return true
+  } catch {
+    return false
+  }
+}
+
+function mergeSkillGroups(stored: SkillGroup[], defaults: SkillGroup[]): SkillGroup[] {
+  const categories = new Set(stored.map((group) => group.category))
+  const missing = defaults.filter((group) => !categories.has(group.category))
+  if (missing.length === 0) return stored
+  return [...stored, ...missing]
+}
+
 export function loadResume(): Resume {
+  const defaults = defaultResume as Resume
+  const profile = loadProfile()
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (stored) {
-      return JSON.parse(stored) as Resume
+      const parsed = JSON.parse(stored) as Resume
+      const skillGroups = mergeSkillGroups(parsed.skillGroups ?? [], defaults.skillGroups ?? [])
+      const summary = isStaleSummary(parsed.summary)
+        ? buildSummaryFromProfile(profile) || defaults.summary
+        : parsed.summary
+      const headerSyncNeeded = syncWorkHeaderVersion()
+      const mergedWorks = headerSyncNeeded
+        ? mergeWorkExperiencesFromDefaults(parsed.workExperiences ?? [], defaults.workExperiences ?? [])
+        : { works: parsed.workExperiences ?? [], changed: false }
+      const workExperiences = mergedWorks.changed
+        ? mergedWorks.works
+        : parsed.workExperiences ?? []
+      const next = { ...parsed, skillGroups, summary, workExperiences }
+      if (
+        skillGroups.length !== (parsed.skillGroups ?? []).length ||
+        summary !== parsed.summary ||
+        mergedWorks.changed
+      ) {
+        saveResume(next)
+        return next
+      }
+      return parsed.summary === summary ? parsed : next
     }
   } catch (error) {
     console.error('读取本地简历数据失败:', error)
   }
-  return defaultResume as Resume
+  return defaults
 }
 
 export function saveResume(resume: Resume): void {
@@ -24,7 +122,14 @@ export function saveResume(resume: Resume): void {
 
 export function resetResume(): Resume {
   localStorage.removeItem(STORAGE_KEY)
+  localStorage.removeItem(RESUME_HEADER_VERSION_KEY)
   return defaultResume as Resume
+}
+
+export function mergeResumeSkillGroups(resume: Resume, defaults: Resume = defaultResume as Resume): Resume {
+  const skillGroups = mergeSkillGroups(resume.skillGroups ?? [], defaults.skillGroups ?? [])
+  if (skillGroups.length === (resume.skillGroups ?? []).length) return resume
+  return { ...resume, skillGroups }
 }
 
 export function exportResumeJson(resume: Resume): void {
@@ -56,15 +161,36 @@ export function importResumeJson(file: File): Promise<Resume> {
 }
 
 export function loadProfile(): PersonalProfile {
+  const defaults = defaultProfile as PersonalProfile
   try {
     const stored = localStorage.getItem(PROFILE_STORAGE_KEY)
     if (stored) {
-      return JSON.parse(stored) as PersonalProfile
+      const parsed = JSON.parse(stored) as PersonalProfile & {
+        contentVersion?: number
+      }
+      const staleProfile =
+        parsed.contentVersion !== PROFILE_CONTENT_VERSION || isStaleAbout(parsed.about)
+      const next: PersonalProfile & { contentVersion?: number } = {
+        ...parsed,
+        hobbies: parsed.hobbies ?? defaults.hobbies ?? [],
+        lifeAbout: parsed.lifeAbout ?? defaults.lifeAbout ?? '',
+        tagline: staleProfile ? defaults.tagline : parsed.tagline,
+        about: staleProfile ? defaults.about : parsed.about,
+        highlights: staleProfile ? defaults.highlights : parsed.highlights,
+        contentVersion: PROFILE_CONTENT_VERSION,
+      }
+      if (staleProfile) {
+        saveProfile(next)
+      }
+      return next
     }
   } catch (error) {
     console.error('读取个人介绍数据失败:', error)
   }
-  return defaultProfile as PersonalProfile
+  return {
+    ...defaults,
+    contentVersion: PROFILE_CONTENT_VERSION,
+  } as PersonalProfile
 }
 
 export function saveProfile(profile: PersonalProfile): void {

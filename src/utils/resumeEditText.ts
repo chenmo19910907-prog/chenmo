@@ -6,6 +6,7 @@ import type {
   WorkExperience,
 } from '../types/resume'
 import { linesToList, listToLines, parseLabeledLines, serializeLabeledLines } from './sectionText'
+import { getWorkDisplayCompany } from './workDisplay'
 
 const BLOCK_SEP = '\n\n---\n\n'
 
@@ -44,7 +45,7 @@ export function parseResumeBasicInfo(text: string, prev: BasicInfo): BasicInfo {
 export function serializeResumeWorks(works: WorkExperience[]): string {
   return works
     .map((work) => {
-      const header = `## ${work.id} | ${work.company} | ${work.position} | ${work.startDate} | ${work.endDate}`
+      const header = `## ${work.id} | ${getWorkDisplayCompany(work)} | ${work.position} | ${work.startDate} | ${work.endDate}`
       const highlights = work.highlights.map((item) => `- ${item}`).join('\n')
       return [header, work.description, highlights].filter(Boolean).join('\n')
     })
@@ -171,9 +172,14 @@ export function parseResumeEducations(text: string, prev: Education[]): Educatio
       degree: parts[2] ?? '',
       startDate: parts[3] ?? '',
       endDate: parts[4] ?? '',
-      deemphasized: deemphasized || old?.deemphasized,
+      deemphasized,
     }
   })
+}
+
+/** 简历展示/导出用：过滤掉行首带 * 隐藏的学历 */
+export function visibleEducations(educations: Education[]): Education[] {
+  return educations.filter((edu) => !edu.deemphasized)
 }
 
 export function serializeResumeSkillGroups(groups: SkillGroup[]): string {

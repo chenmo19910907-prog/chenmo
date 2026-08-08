@@ -1,26 +1,27 @@
-import { Link } from 'react-router-dom'
 import EditableSection from './EditableSection'
-import type { Resume } from '../types/resume'
+import type { Resume, WorkExperience } from '../types/resume'
 import {
   linesToList,
   listToLines,
   parseResumeBasicInfo,
   parseResumeEducations,
-  parseResumeProjects,
-  parseResumeSkillGroups,
   parseResumeWorks,
   serializeResumeBasicInfo,
   serializeResumeEducations,
-  serializeResumeProjects,
-  serializeResumeSkillGroups,
   serializeResumeWorks,
+  visibleEducations,
 } from '../utils/resumeEditText'
+import { cleanResumeSummary, normalizeDisplayTitle } from '../utils/cleanResumeSummary'
+import { getWorkDisplayCompany } from '../utils/workDisplay'
+import { toReadableResumeText, splitSummaryParagraphs } from '../utils/readableResumeText'
 
 interface ResumeViewProps {
   resume: Resume
   editable?: boolean
   onResumeChange?: (resume: Resume) => void
 }
+
+const MAX_WORK_HIGHLIGHTS = 5
 
 function Section({
   title,
@@ -30,8 +31,8 @@ function Section({
   children: React.ReactNode
 }) {
   return (
-    <section className="mb-8">
-      <h2 className="mb-4 border-b-2 border-blue-600 pb-2 text-lg font-semibold text-blue-800">
+    <section className="mb-9 last:mb-0">
+      <h2 className="mb-4 border-l-[3px] border-blue-600 pl-3 text-[13px] font-bold uppercase tracking-[0.18em] text-slate-800">
         {title}
       </h2>
       {children}
@@ -39,160 +40,162 @@ function Section({
   )
 }
 
-function BasicInfoPreview({ resume }: { resume: Resume }) {
-  const { basicInfo } = resume
-  const contacts = [
-    { label: '电话', value: basicInfo.phone },
-    { label: '邮箱', value: basicInfo.email },
-    { label: '地点', value: basicInfo.location },
-    { label: '学历', value: basicInfo.degree },
-    { label: '网站', value: basicInfo.website, href: basicInfo.website },
-  ].filter((item) => item.value)
-
+function ContactRow({ items }: { items: { label: string; value: string }[] }) {
+  if (items.length === 0) return null
   return (
-    <header className="border-b border-slate-200 pb-4 text-center">
-      <h1 className="text-2xl font-bold text-slate-900">{basicInfo.name}</h1>
-      <p className="mt-1 text-slate-600">{basicInfo.title}</p>
-      <div className="mt-3 flex flex-wrap justify-center gap-x-3 gap-y-1 text-sm text-slate-500">
-        {contacts.map((item) =>
-          item.href ? (
-            <span key={item.label}>
-              {item.label}：{item.value}
-            </span>
-          ) : (
-            <span key={item.label}>
-              {item.label}：{item.value}
-            </span>
-          ),
-        )}
-      </div>
-    </header>
-  )
-}
-
-function WorkListPreview({ resume, withLinks }: { resume: Resume; withLinks?: boolean }) {
-  if (resume.workExperiences.length === 0) return null
-  return (
-    <div className="space-y-4">
-      {resume.workExperiences.map((work) => (
-        <div key={work.id}>
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h3 className="font-semibold text-slate-900">
-              {withLinks ? (
-                <span className="text-blue-700">{work.company}</span>
-              ) : (
-                work.company
-              )}
-              {work.featured && (
-                <span className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-                  核心经历
-                </span>
-              )}
-              <span className="mx-2 text-slate-400">·</span>
-              {work.position}
-            </h3>
-            <span className="text-sm text-slate-500">
-              {work.startDate} - {work.endDate}
-            </span>
-          </div>
-          <p className="mt-1 text-slate-700">{work.description}</p>
-          {work.highlights.length > 0 && (
-            <ul className="mt-1 list-disc space-y-0.5 pl-5 text-slate-700">
-              {work.highlights.map((item, index) => (
-                <li key={index}>{item}</li>
-              ))}
-            </ul>
-          )}
-        </div>
+    <div className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[13px] text-slate-500">
+      {items.map((item, index) => (
+        <span key={item.label} className="inline-flex items-center gap-3">
+          {index > 0 && <span className="text-slate-300" aria-hidden>·</span>}
+          <span>
+            <span className="text-slate-400">{item.label}</span> {item.value}
+          </span>
+        </span>
       ))}
     </div>
   )
 }
 
-function ProjectListPreview({ resume }: { resume: Resume }) {
-  if (resume.projectExperiences.length === 0) return null
+function WebsiteCta({ url }: { url?: string }) {
+  if (!url?.trim()) return null
+
   return (
-    <div className="space-y-4">
-      {resume.projectExperiences.map((project) => (
-        <div key={project.id}>
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h3 className="font-semibold text-slate-900">
-              {project.name}
-              <span className="mx-2 text-slate-400">·</span>
-              {project.role}
+    <p className="mt-3 text-center text-[13px] text-slate-500">
+      更多项目与作品见个人主页：
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="ml-1 text-blue-600 underline decoration-blue-200 underline-offset-2 hover:text-blue-700"
+      >
+        {url.replace(/^https?:\/\//, '')}
+      </a>
+    </p>
+  )
+}
+
+function BulletList({ items, className = '' }: { items: string[]; className?: string }) {
+  if (items.length === 0) return null
+  return (
+    <ul className={`space-y-2 ${className}`}>
+      {items.map((item, index) => (
+        <li key={index} className="flex gap-2.5 text-[14px] leading-relaxed text-slate-600">
+          <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500/70" aria-hidden />
+          <span>{toReadableResumeText(item)}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function SummaryPreview({ text }: { text: string }) {
+  const paragraphs = splitSummaryParagraphs(
+    toReadableResumeText(cleanResumeSummary(text)),
+  )
+
+  return (
+    <div className="space-y-3">
+      {paragraphs.map((paragraph, index) => (
+        <p key={index} className="text-[14px] leading-relaxed text-slate-600">
+          {paragraph}
+        </p>
+      ))}
+    </div>
+  )
+}
+
+function WorkExperienceBlock({ work }: { work: WorkExperience }) {
+  const highlights = work.highlights.slice(0, MAX_WORK_HIGHLIGHTS)
+  const roleSummary = work.description?.trim()
+    ? toReadableResumeText(work.description.trim())
+    : ''
+
+  return (
+    <article className="relative border-l border-slate-200 pl-4">
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-[15px] font-semibold text-slate-900">
+              {getWorkDisplayCompany(work)}
             </h3>
-            <span className="text-sm text-slate-500">
-              {project.startDate} - {project.endDate}
-            </span>
+            {work.featured && (
+              <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[11px] font-medium text-blue-700">
+                核心
+              </span>
+            )}
           </div>
-          <p className="mt-1 text-slate-700">{project.description}</p>
-          {project.techStack.length > 0 && (
-            <div className="mt-1 flex flex-wrap gap-1">
-              {project.techStack.map((tech) => (
-                <span
-                  key={tech}
-                  className="rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700"
-                >
-                  {tech}
-                </span>
-              ))}
-            </div>
-          )}
-          {project.highlights.length > 0 && (
-            <ul className="mt-1 list-disc space-y-0.5 pl-5 text-slate-700">
-              {project.highlights.map((item, index) => (
-                <li key={index}>{item}</li>
-              ))}
-            </ul>
-          )}
+          <p className="mt-0.5 text-[13px] text-slate-500">{work.position}</p>
         </div>
+        <time className="shrink-0 text-[12px] tabular-nums text-slate-400">
+          {work.startDate} — {work.endDate}
+        </time>
+      </div>
+
+      {roleSummary && (
+        <p className="mt-2 text-[14px] leading-relaxed text-slate-600">{roleSummary}</p>
+      )}
+
+      {highlights.length > 0 && (
+        <div className="mt-2.5">
+          <BulletList items={highlights} />
+        </div>
+      )}
+    </article>
+  )
+}
+
+function WorkListPreview({ resume }: { resume: Resume }) {
+  if (resume.workExperiences.length === 0) return null
+  return (
+    <div className="space-y-7">
+      {resume.workExperiences.map((work) => (
+        <WorkExperienceBlock key={work.id} work={work} />
       ))}
     </div>
   )
 }
 
 function EducationListPreview({ resume }: { resume: Resume }) {
-  if (resume.educations.length === 0) return null
+  const educations = visibleEducations(resume.educations)
+  if (educations.length === 0) return null
   return (
-    <div className="space-y-1">
-      {resume.educations.map((edu) => (
+    <div className="space-y-2">
+      {educations.map((edu) => (
         <div
           key={edu.id}
-          className={edu.deemphasized ? 'text-xs text-slate-400' : 'text-sm text-slate-600'}
+          className="flex flex-wrap items-baseline justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2 text-[14px]"
         >
-          <span className={edu.deemphasized ? '' : 'font-medium text-slate-800'}>
+          <span className="font-medium text-slate-800">
             {edu.school}
+            {edu.major && <span className="font-normal text-slate-500"> · {edu.major}</span>}
           </span>
-          {edu.major && (
-            <>
-              <span className="mx-1.5 text-slate-400">·</span>
-              <span>{edu.major}</span>
-            </>
-          )}
-          {(edu.startDate || edu.endDate) && (
-            <span className="ml-2 text-slate-400">
-              {edu.startDate}
-              {edu.startDate && edu.endDate && ' - '}
-              {edu.endDate}
-            </span>
-          )}
+          <span className="text-slate-400">{edu.degree}</span>
         </div>
       ))}
     </div>
   )
 }
 
-function SkillListPreview({ resume }: { resume: Resume }) {
-  if (resume.skillGroups.length === 0) return null
+function ResumeHeader({ resume }: { resume: Resume }) {
+  const { basicInfo } = resume
+  const contacts = [
+    { label: '电话', value: basicInfo.phone },
+    { label: '邮箱', value: basicInfo.email },
+    { label: '地点', value: basicInfo.location },
+    { label: '学历', value: basicInfo.degree },
+  ].filter((item): item is { label: string; value: string } => Boolean(item.value))
+
   return (
-    <div className="space-y-2">
-      {resume.skillGroups.map((group) => (
-        <div key={group.id}>
-          <span className="font-medium text-slate-900">{group.category}：</span>
-          <span className="text-slate-700">{group.items.join('、')}</span>
-        </div>
-      ))}
-    </div>
+    <header className="border-b border-slate-100 pb-7 text-center">
+      <h1 className="text-[28px] font-bold tracking-tight text-slate-900 md:text-[32px]">
+        {basicInfo.name}
+      </h1>
+      <p className="mt-1.5 text-[15px] font-medium text-slate-500">
+        {normalizeDisplayTitle(basicInfo.title)}
+      </p>
+      <ContactRow items={contacts} />
+      <WebsiteCta url={basicInfo.website} />
+    </header>
   )
 }
 
@@ -201,67 +204,36 @@ export default function ResumeView({ resume, editable = false, onResumeChange }:
     onResumeChange?.({ ...resume, ...patch })
   }
 
-  const { basicInfo } = resume
-  const contacts = [
-    { label: '电话', value: basicInfo.phone },
-    { label: '邮箱', value: basicInfo.email },
-    { label: '地点', value: basicInfo.location },
-    { label: '学历', value: basicInfo.degree },
-    { label: '网站', value: basicInfo.website, href: basicInfo.website },
-  ].filter((item) => item.value)
-
   return (
-    <article className="mx-auto max-w-3xl rounded-2xl bg-white p-8 shadow-lg md:p-12">
+    <article className="mx-auto max-w-[780px] rounded-xl bg-white px-8 py-10 shadow-sm ring-1 ring-slate-200/80 md:px-12 md:py-12">
       <EditableSection
         editable={editable}
         title="编辑基本信息"
         hint="第一行姓名，第二行职位；下方为联系方式，格式「标签：内容」。"
+        className="mb-8"
         getDraft={() => serializeResumeBasicInfo(resume.basicInfo)}
         onSave={(draft) =>
           patchResume({ basicInfo: parseResumeBasicInfo(draft, resume.basicInfo) })
         }
         renderPreview={(draft) => (
-          <BasicInfoPreview
+          <ResumeHeader
             resume={{ ...resume, basicInfo: parseResumeBasicInfo(draft, resume.basicInfo) }}
           />
         )}
       >
-        <header className="mb-8 border-b border-slate-200 pb-8 text-center">
-          <h1 className="text-3xl font-bold text-slate-900 md:text-4xl">{basicInfo.name}</h1>
-          <p className="mt-2 text-lg text-slate-600">{basicInfo.title}</p>
-          <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm text-slate-500">
-            {contacts.map((item) =>
-              item.href ? (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-blue-600 hover:underline"
-                >
-                  {item.label}：{item.value}
-                </a>
-              ) : (
-                <span key={item.label}>
-                  {item.label}：{item.value}
-                </span>
-              ),
-            )}
-          </div>
-        </header>
+        <ResumeHeader resume={resume} />
       </EditableSection>
 
       <Section title="个人简介">
         <EditableSection
           editable={editable}
           title="编辑个人简介"
+          hint="每行一条要点，空行分段；建议涵盖平台能力、履历与核心业绩"
           getDraft={() => resume.summary}
           onSave={(draft) => patchResume({ summary: draft.trim() })}
-          renderPreview={(draft) => (
-            <p className="leading-relaxed text-slate-700">{draft}</p>
-          )}
+          renderPreview={(draft) => <SummaryPreview text={draft} />}
         >
-          <p className="leading-relaxed text-slate-700">{resume.summary}</p>
+          <SummaryPreview text={resume.summary} />
         </EditableSection>
       </Section>
 
@@ -286,117 +258,17 @@ export default function ResumeView({ resume, editable = false, onResumeChange }:
               />
             )}
           >
-            <div className="space-y-6">
-              {resume.workExperiences.map((work) => (
-                <div key={work.id}>
-                  <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <h3 className="font-semibold text-slate-900">
-                      <Link
-                        to={`/works/${work.id}`}
-                        className="hover:text-blue-700 hover:underline"
-                      >
-                        {work.company}
-                      </Link>
-                      {work.featured && (
-                        <span className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-                          核心经历
-                        </span>
-                      )}
-                      <span className="mx-2 text-slate-400">·</span>
-                      {work.position}
-                    </h3>
-                    <span className="text-sm text-slate-500">
-                      {work.startDate} - {work.endDate}
-                    </span>
-                  </div>
-                  <p className="mt-2 text-slate-700">{work.description}</p>
-                  {work.highlights.length > 0 && (
-                    <ul className="mt-2 list-disc space-y-1 pl-5 text-slate-700">
-                      {work.highlights.map((item, index) => (
-                        <li key={index}>{item}</li>
-                      ))}
-                    </ul>
-                  )}
-                  <Link
-                    to={`/works/${work.id}`}
-                    className="mt-2 inline-block text-sm text-blue-600 hover:underline"
-                  >
-                    查看详细介绍 →
-                  </Link>
-                </div>
-              ))}
-            </div>
+            <WorkListPreview resume={resume} />
           </EditableSection>
         </Section>
       )}
 
-      {resume.projectExperiences.length > 0 && (
-        <Section title="项目经历">
-          <EditableSection
-            editable={editable}
-            title="编辑项目经历"
-            hint="每条以 ## id | 项目名 | 角色 | 开始 | 结束 开头；技术栈一行「技术：a、b」；要点以 - 开头。"
-            getDraft={() => serializeResumeProjects(resume.projectExperiences)}
-            onSave={(draft) =>
-              patchResume({
-                projectExperiences: parseResumeProjects(draft, resume.projectExperiences),
-              })
-            }
-            renderPreview={(draft) => (
-              <ProjectListPreview
-                resume={{
-                  ...resume,
-                  projectExperiences: parseResumeProjects(draft, resume.projectExperiences),
-                }}
-              />
-            )}
-          >
-            <div className="space-y-6">
-              {resume.projectExperiences.map((project) => (
-                <div key={project.id}>
-                  <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <h3 className="font-semibold text-slate-900">
-                      {project.name}
-                      <span className="mx-2 text-slate-400">·</span>
-                      {project.role}
-                    </h3>
-                    <span className="text-sm text-slate-500">
-                      {project.startDate} - {project.endDate}
-                    </span>
-                  </div>
-                  <p className="mt-2 text-slate-700">{project.description}</p>
-                  {project.techStack.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {project.techStack.map((tech) => (
-                        <span
-                          key={tech}
-                          className="rounded-full bg-blue-50 px-3 py-0.5 text-xs text-blue-700"
-                        >
-                          {tech}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  {project.highlights.length > 0 && (
-                    <ul className="mt-2 list-disc space-y-1 pl-5 text-slate-700">
-                      {project.highlights.map((item, index) => (
-                        <li key={index}>{item}</li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              ))}
-            </div>
-          </EditableSection>
-        </Section>
-      )}
-
-      {resume.educations.length > 0 && (
+      {resume.educations.length > 0 && (editable || visibleEducations(resume.educations).length > 0) && (
         <Section title="学历">
           <EditableSection
             editable={editable}
             title="编辑学历"
-            hint="每行：学校 | 专业 | 学历 | 开始 | 结束；弱化展示的行首加 * "
+            hint="每行：学校 | 专业 | 学历 | 开始 | 结束；暂不展示的行首加 *（去掉 * 即恢复显示）"
             getDraft={() => serializeResumeEducations(resume.educations)}
             onSave={(draft) =>
               patchResume({
@@ -417,32 +289,6 @@ export default function ResumeView({ resume, editable = false, onResumeChange }:
         </Section>
       )}
 
-      {resume.skillGroups.length > 0 && (
-        <Section title="专业技能">
-          <EditableSection
-            editable={editable}
-            title="编辑专业技能"
-            hint="每组第一行分类名，第二行技能项用顿号分隔；多组之间用 --- 分隔。"
-            getDraft={() => serializeResumeSkillGroups(resume.skillGroups)}
-            onSave={(draft) =>
-              patchResume({
-                skillGroups: parseResumeSkillGroups(draft, resume.skillGroups),
-              })
-            }
-            renderPreview={(draft) => (
-              <SkillListPreview
-                resume={{
-                  ...resume,
-                  skillGroups: parseResumeSkillGroups(draft, resume.skillGroups),
-                }}
-              />
-            )}
-          >
-            <SkillListPreview resume={resume} />
-          </EditableSection>
-        </Section>
-      )}
-
       {resume.selfEvaluation && resume.selfEvaluation.length > 0 && (
         <Section title="自我评价">
           <EditableSection
@@ -451,19 +297,9 @@ export default function ResumeView({ resume, editable = false, onResumeChange }:
             hint="每行一条评价。"
             getDraft={() => listToLines(resume.selfEvaluation ?? [])}
             onSave={(draft) => patchResume({ selfEvaluation: linesToList(draft) })}
-            renderPreview={(draft) => (
-              <ul className="list-disc space-y-1 pl-5 text-slate-700">
-                {linesToList(draft).map((item, index) => (
-                  <li key={index}>{item}</li>
-                ))}
-              </ul>
-            )}
+            renderPreview={(draft) => <BulletList items={linesToList(draft)} />}
           >
-            <ul className="list-disc space-y-1 pl-5 text-slate-700">
-              {resume.selfEvaluation.map((item, index) => (
-                <li key={index}>{item}</li>
-              ))}
-            </ul>
+            <BulletList items={resume.selfEvaluation} />
           </EditableSection>
         </Section>
       )}

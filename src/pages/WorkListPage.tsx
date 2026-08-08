@@ -4,6 +4,7 @@ import { RESTORE_SCROLL_STATE } from '../components/ScrollToTop'
 import { useAccessMode } from '../context/AccessModeContext'
 import { useResume } from '../context/ResumeContext'
 import { replaceWork } from '../utils/workExperience'
+import { getWorkDisplayCompany } from '../utils/workDisplay'
 
 export default function WorkListPage() {
   const { id } = useParams()
@@ -67,9 +68,6 @@ export default function WorkListPage() {
       <div className="mx-auto max-w-5xl overflow-visible">
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-slate-900">全部经历</h2>
-          <p className="mt-2 max-w-2xl text-slate-600">
-            切换下方标签查看各段工作的业务背景、职责范围、代表项目与工作成果。
-          </p>
         </div>
 
         <nav
@@ -78,7 +76,7 @@ export default function WorkListPage() {
         >
           {works.map((work) => {
             const active = work.id === activeId
-            const label = work.company
+            const label = getWorkDisplayCompany(work)
             return (
               <button
                 key={work.id}

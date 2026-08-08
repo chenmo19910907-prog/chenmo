@@ -1,8 +1,11 @@
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import EditableSection from './EditableSection'
 import type { WorkExperience } from '../types/resume'
 import { parseWorkCard, serializeWorkCard } from '../utils/sectionText'
 import { getWorkDisplayCompany } from '../utils/workDisplay'
+import { getWorkCardSummary } from '../utils/workWebDisplay'
+import { polishWorkForWeb } from '../utils/polishWorkForWeb'
 
 interface WorkExperienceCardProps {
   work: WorkExperience
@@ -17,38 +20,33 @@ function CardPreview({
   company,
   position,
   summary,
-  tools,
+  highlights,
 }: {
   startDate: string
   endDate: string
   company: string
   position: string
   summary: string
-  tools: string[]
+  highlights: string[]
 }) {
   return (
     <>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-blue-600">
-            {startDate} — {endDate}
-          </p>
-          <h3 className="mt-1 text-xl font-bold text-slate-900">{company}</h3>
+          <h3 className="text-xl font-bold text-slate-900">{company}</h3>
           <p className="mt-1 text-slate-600">{position}</p>
         </div>
+        <time className="shrink-0 text-xs tabular-nums text-slate-400">
+          {startDate} — {endDate}
+        </time>
       </div>
-      <p className="mt-4 line-clamp-3 text-sm leading-relaxed text-slate-600">{summary}</p>
-      {tools.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {tools.map((tool) => (
-            <span
-              key={tool}
-              className="rounded-full bg-slate-50 px-2.5 py-0.5 text-xs text-slate-600"
-            >
-              {tool}
-            </span>
+      <p className="mt-4 text-sm leading-relaxed text-slate-700">{summary}</p>
+      {highlights.length > 0 && (
+        <ul className="mt-3 space-y-1.5 border-l-2 border-blue-100 pl-3 text-sm leading-relaxed text-slate-600">
+          {highlights.map((item) => (
+            <li key={item}>{item}</li>
           ))}
-        </div>
+        </ul>
       )}
     </>
   )
@@ -60,8 +58,9 @@ export default function WorkExperienceCard({
   editable = false,
   onWorkChange,
 }: WorkExperienceCardProps) {
-  const summary = work.detail?.tagline ?? work.description
-  const tools = work.detail?.tools?.slice(0, 4) ?? []
+  const displayWork = useMemo(() => polishWorkForWeb(work), [work])
+  const summary = getWorkCardSummary(displayWork)
+  const previewHighlights = displayWork.highlights.slice(0, featured ? 3 : 2)
   const canEdit = editable && !!onWorkChange
   const displayCompany = getWorkDisplayCompany(work)
 
@@ -72,7 +71,7 @@ export default function WorkExperienceCard({
       company: displayCompany,
       position: work.position,
       summary,
-      tools,
+      tools: [],
     })
 
   const applyDraft = (draft: string) => {
@@ -83,20 +82,7 @@ export default function WorkExperienceCard({
       endDate: parsed.endDate,
       displayCompany: parsed.company,
       position: parsed.position,
-      description: work.detail ? work.description : parsed.summary,
-      detail: work.detail
-        ? {
-            ...work.detail,
-            tagline: parsed.summary,
-            tools:
-              parsed.tools.length > 0
-                ? [
-                    ...parsed.tools,
-                    ...work.detail.tools.slice(parsed.tools.length),
-                  ]
-                : work.detail.tools,
-          }
-        : work.detail,
+      description: parsed.summary,
     })
   }
 
@@ -121,8 +107,8 @@ export default function WorkExperienceCard({
         title={`编辑 ${displayCompany}`}
         getDraft={getDraft}
         onSave={applyDraft}
-        hint="依次为时间、公司、职位；空行后为概述；可选「工具：A、B、C」"
-        renderPreview={(draft) => <CardPreview {...parseWorkCard(draft)} />}
+        hint="依次为时间、公司、职位；空行后为卡片概述（可多段）"
+        renderPreview={(draft) => <CardPreview {...parseWorkCard(draft)} highlights={[]} />}
       >
         <CardPreview
           startDate={work.startDate}
@@ -130,7 +116,7 @@ export default function WorkExperienceCard({
           company={displayCompany}
           position={work.position}
           summary={summary}
-          tools={tools}
+          highlights={previewHighlights}
         />
       </EditableSection>
     </article>

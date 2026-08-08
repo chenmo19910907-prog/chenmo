@@ -3,7 +3,7 @@ import { exportToWord } from '../utils/exportDocx'
 import { exportResumeJson, importResumeJson, saveResume } from '../utils/storage'
 
 export default function Toolbar() {
-  const { resume, setResume, showMessage, handleSave, handleReset, fileInputRef } =
+  const { resume, setResume, showMessage, handleSave, handleReset, handleRefresh, refreshing, fileInputRef } =
     useResume()
 
   const handleExportWord = async () => {
@@ -45,6 +45,14 @@ export default function Toolbar() {
           onClick={handleSave}
         >
           保存
+        </button>
+        <button
+          type="button"
+          className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 disabled:opacity-50"
+          onClick={() => void handleRefresh()}
+          disabled={refreshing}
+        >
+          {refreshing ? '更新中…' : '更新'}
         </button>
         <button
           type="button"

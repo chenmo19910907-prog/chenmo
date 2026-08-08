@@ -11,7 +11,14 @@ const JD_NOISE_PATTERNS = [
   /^下载APP$/,
   /^登录/,
   /^分享$/,
-  /^\d+人浏览$/,
+  /^精选职位$/,
+  /^感兴趣$/,
+  /^猜你喜欢$/,
+  /^已展示/,
+  /^查看更多$/,
+  /^职位描述$/,
+  /^全部$/,
+  /^\d+-\d+K/,
   /^\d+分钟前$/,
   /^今日活跃$/,
   /^在线$/,
@@ -45,13 +52,50 @@ function isLocationMetaLine(line) {
 }
 
 function isCompanyLine(line) {
-  if (line.length < 2 || line.length > 30) return false
+  if (line.length < 2 || line.length > 40) return false
   if (/职责|要求|描述|薪资|福利|地址|地图|融资|规模/.test(line)) return false
   if (isSalaryLine(line) || isLocationMetaLine(line)) return false
   return (
     /(?:科技|网络|信息|互联网|集团|公司|有限|Inc|Ltd|工作室|实验室|研究院)/.test(line) ||
     /^[\u4e00-\u9fffA-Za-z0-9（）()]{2,20}$/.test(line)
   )
+}
+
+function isBadTitle(line) {
+  if (!line) return true
+  if (/^\d{1,2}[A-Za-z]{3}\.\d{4}$/.test(line)) return true
+  if (/^BOSS|^直聘|zhipin/i.test(line)) return true
+  if (isSalaryLine(line) || isLocationMetaLine(line) || isCompanyLine(line)) return true
+  return false
+}
+
+function isLikelyJobTitle(line) {
+  if (!line || line.length < 2 || line.length > 40) return false
+  if (isBadTitle(line)) return false
+  if (/主管|招聘|猎头|HR/i.test(line) && !/工程师/.test(line)) return false
+  return /工程师|测试|开发|经理|总监|专家|负责人|专员|架构|产品|运营|设计/.test(line)
+}
+
+function isMapNoiseLine(line) {
+  if (!line || line.length < 2) return true
+  if (/号楼|大厦|公寓|地图|高德|按距离|添加住址|查看全部|ZHIPIN|扫码查看|找工作|不需要融资/.test(line)) {
+    return true
+  }
+  if (/^\d+-\d+人\s/.test(line) || /人\s+互联网$/.test(line)) return true
+  if (/^[A-Z]{2,}$/.test(line)) return true
+  if (/公司|科技|有限公司/.test(line) && line.length <= 30) return true
+  return false
+}
+
+function cleanJdSection(text) {
+  if (!text) return ''
+  return text
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line && !isMapNoiseLine(line) && !isNoiseLine(line))
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
 }
 
 /**
@@ -92,10 +136,24 @@ export function parseJdText(text) {
   }
 
   if (!title) {
+    for (const line of lines.slice(0, 8)) {
+      if (isLikelyJobTitle(line)) {
+        title = line.replace(/\s*【.*?】\s*$/, '').trim()
+        break
+      }
+    }
+  }
+
+  if (isBadTitle(title)) {
+    const candidate = lines.find((line) => isLikelyJobTitle(line))
+    if (candidate) title = candidate.replace(/\s*【.*?】\s*$/, '').trim()
+  }
+
+  if (!title) {
     for (const line of lines.slice(0, 6)) {
       if (isSalaryLine(line) || isLocationMetaLine(line) || isCompanyLine(line)) continue
       if (/职责|要求|描述|福利|标签/.test(line)) continue
-      if (line.length >= 2 && line.length <= 40) {
+      if (line.length >= 2 && line.length <= 40 && !isBadTitle(line)) {
         title = line.replace(/\s*【.*?】\s*$/, '').trim()
         break
       }
@@ -190,17 +248,21 @@ export function parseJdText(text) {
     if (m) company = m[0].trim()
   }
 
-  description = description.replace(/^(职位描述|岗位职责|工作内容)[：:\s]*/m, '').trim()
-  requirements = requirements.replace(/^(任职要求|岗位要求|职位要求)[：:\s]*/m, '').trim()
+  description = cleanJdSection(description.replace(/^(职位描述|岗位职责|工作内容)[：:\s]*/m, '').trim())
+  requirements = cleanJdSection(
+    requirements.replace(/^(任职要求|岗位要求|职位要求)[：:\s]*/m, '').trim(),
+  )
 
   const metaParts = []
   if (salary) metaParts.push(`薪资：${salary}`)
   if (location) metaParts.push(`地点：${location}`)
   if (metaParts.length && description) {
     description = `${metaParts.join(' · ')}\n\n${description}`
-  } else if (metaParts.length && !description) {
+  } else   if (metaParts.length && !description) {
     description = metaParts.join(' · ')
   }
+
+  title = title.replace(/^[＜<>\s]+/, '').replace(/\s*【.*?】\s*$/, '').trim()
 
   return { company, title, description, requirements, salary, location, channel }
 }

@@ -59,7 +59,7 @@ export interface Education {
   major: string
   startDate: string
   endDate: string
-  /** 弱化展示（如大专），不抢本科视觉重心 */
+  /** 暂不展示（行首 * 标记），简历与导出中隐藏，需要时去掉 * 即可显示 */
   deemphasized?: boolean
 }
 

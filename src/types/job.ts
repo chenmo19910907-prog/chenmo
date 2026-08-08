@@ -182,6 +182,31 @@ export const STATUS_OPTIONS: { value: ApplicationStatus; label: string; color: s
   { value: 'archived', label: '已归档', color: 'bg-slate-50 text-slate-400' },
 ]
 
+export interface JobAnalysisSearchLink {
+  label: string
+  url: string
+}
+
+export interface JobAnalysis {
+  company: string
+  title: string
+  matchScore: number
+  matchTier: 'high' | 'medium' | 'low' | 'unknown'
+  profile?: ResumeProfile
+  profileLabel?: string
+  isOutsourcing: boolean
+  outsourcingConfidence?: 'likely' | 'possible' | 'direct'
+  outsourcingReason?: string
+  companyBrief?: string
+  companyBackground?: string[]
+  industryGuess?: string
+  employmentAdvice?: string
+  suggestions: string[]
+  searchLinks: JobAnalysisSearchLink[]
+  analyzedAt: string
+  extractionSource?: 'jd' | 'screenshot' | 'mixed'
+}
+
 export interface ResumeVariant {
   id: string
   jobId: string
@@ -193,12 +218,16 @@ export interface ResumeVariant {
   createdAt: string
   /** 招聘 JD 摘要（简历制作） */
   jdSummary?: string
-  /** 招聘信息截图 URL */
+  /** 招聘信息截图 URL（首张，兼容旧数据） */
   screenshotUrl?: string
+  /** 招聘信息截图 URL 列表 */
+  screenshotUrls?: string[]
   /** 该份简历的公开访问地址 */
   publicUrl?: string
   /** 个人主页外网地址（附在简历中） */
   profileSiteUrl?: string
+  /** 公司与岗位自动分析结果 */
+  jobAnalysis?: JobAnalysis
 }
 
 export interface VariantStore {

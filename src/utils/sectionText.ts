@@ -272,3 +272,29 @@ export function parseHero(text: string): {
     },
   }
 }
+
+export function serializeLifeSection(profile: { hobbies: string[]; lifeAbout?: string }): string {
+  const lines = [`爱好：${profile.hobbies.join('、')}`]
+  if (profile.lifeAbout?.trim()) {
+    lines.push('', profile.lifeAbout.trim())
+  }
+  return lines.join('\n')
+}
+
+export function parseLifeSection(text: string): { hobbies: string[]; lifeAbout: string } {
+  const parts = text
+    .split(/\n\s*\n/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+  const firstLine = parts[0] ?? ''
+  let hobbies: string[] = []
+  if (firstLine.startsWith('爱好：') || firstLine.startsWith('爱好:')) {
+    hobbies = firstLine
+      .replace(/^爱好[：:]/, '')
+      .split(/[、,，]/)
+      .map((item) => item.trim())
+      .filter(Boolean)
+  }
+  const lifeAbout = parts.slice(1).join('\n\n').trim()
+  return { hobbies, lifeAbout }
+}

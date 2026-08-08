@@ -1,6 +1,7 @@
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { RESTORE_SCROLL_STATE } from './ScrollToTop'
 import { useAccessMode } from '../context/AccessModeContext'
+import { getPublicPreviewUrl } from '../utils/accessMode'
 
 const publicNav = [{ to: '/', label: '个人介绍' }]
 
@@ -29,7 +30,16 @@ export default function Layout() {
             </Link>
 
             {!loading && (
-              <nav className="flex flex-wrap gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1">
+              <div className="flex flex-wrap items-center gap-3">
+                <a
+                  href={getPublicPreviewUrl('/')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-600 transition hover:border-blue-200 hover:text-blue-700"
+                >
+                  外网预览
+                </a>
+                <nav className="flex flex-wrap gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1">
                 {navItems.map((item) => {
                   const active =
                     item.to === '/'
@@ -50,7 +60,8 @@ export default function Layout() {
                     </Link>
                   )
                 })}
-              </nav>
+                </nav>
+              </div>
             )}
           </div>
         </header>

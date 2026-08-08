@@ -3,10 +3,8 @@
 export const PROFILE_CONFIG = {
   'business-expert': {
     label: '业务专家',
-    workBoost: ['work-3', 'work-0', 'work-4'],
+    workBoost: ['work-0', 'work-3', 'work-4'],
     workPenalty: ['work-1'],
-    summaryPrefix:
-      '语音房社交业务测试专家，深度理解 PK、送礼、活动运营与海外发版。',
     highlightKeywords: [
       '语音房',
       'K 歌',
@@ -27,7 +25,6 @@ export const PROFILE_CONFIG = {
     label: '平台 / 测开',
     workBoost: ['work-0', 'work-3'],
     workPenalty: ['work-1'],
-    summaryPrefix: '语音房社交测试 + 智能工具平台搭建，业务驱动工程提效。',
     highlightKeywords: [
       '平台',
       'Agent',
@@ -46,7 +43,6 @@ export const PROFILE_CONFIG = {
     label: '管理 / 组长',
     workBoost: ['work-2', 'work-3', 'work-0'],
     workPenalty: ['work-1'],
-    summaryPrefix: '测试团队管理经验 + 语音房社交业务深度，兼具交付与业务判断。',
     highlightKeywords: [
       '组长',
       '负责人',
@@ -95,4 +91,19 @@ function scoreWork(work, boost, penalty, profileKw, jdKw) {
 
 export function getProfileLabel(profile) {
   return PROFILE_CONFIG[profile]?.label ?? PROFILE_CONFIG['business-expert'].label
+}
+
+function parseWorkMonth(value) {
+  if (!value || value === '至今') return 999912
+  const [year, month] = String(value).split('-').map(Number)
+  return (year || 0) * 100 + (month || 0)
+}
+
+/** 工作经历按结束时间倒序（至今优先），同结束时间再比开始时间 */
+export function sortWorkChronologically(workExperiences) {
+  return [...workExperiences].sort((a, b) => {
+    const endDiff = parseWorkMonth(b.endDate) - parseWorkMonth(a.endDate)
+    if (endDiff !== 0) return endDiff
+    return parseWorkMonth(b.startDate) - parseWorkMonth(a.startDate)
+  })
 }

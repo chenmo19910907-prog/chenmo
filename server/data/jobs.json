@@ -1,5 +1,5 @@
 {
-  "lastRefreshAt": "2026-08-06T17:13:18.632Z",
+  "lastRefreshAt": "2026-08-08T07:07:35.884Z",
   "lastRefreshStatus": "partial",
   "lastRefreshFetched": 0,
   "lastRefreshBossFetched": 0,
@@ -9,6 +9,25 @@
     "猎聘: 猎聘未配置或未启用，请配置 server/config/liepin.json"
   ],
   "jobs": [
+    {
+      "id": "2bb8b707-45c5-421f-8053-a454c952798e",
+      "company": "北京米可世界科技有限公司",
+      "companyId": "manual",
+      "title": "中级测试工程师",
+      "url": "",
+      "description": "14:454\nBOSS 直聘\n：！份 5\n◎ 北京 朝阳区 三元桥\n3-5年\n本科\n李松\n米可世界 测试主管\n昨日活跃\n职位详情\n自动化测试\nMySQL\n功能测试\n计算机相关专业\nJMeter\nPython\niOS），H5等产品\n2、参与产品需求会议，能够提出疑问和建议；\n3、依据需求文档及设计文档，编写测试用例；\n4、进行BUG验证并根据测试结果与开发、产品部门\n反复沟通测试情况，督促开发部门解决问题，修正测\n试中发现的缺陷，跟踪bug全生命周期；\n5、根据测试需要能提出测试工具需求或自己编写简\n单脚本；\n6、按时完成测试任务，保证产品质量",
+      "requirements": "1、计算机相关专业，统招本科及以上学历\n2、3年以上互联网测试经验，需具备H5项目\n经验\n3、功能测试基础扎实，拥有代码能力更佳\n4、会使用fiiddler，xmind，数据库，postman\n等基础测试工具\n5、对于弱网，兼容测试均需有涉及和了解\n6、具有较强得业务分析能力，较好得沟通表达\n和综合协调能力，对质量保证有深刻理解\n7、有海外业务或者社交直播项目经验更佳；\n10.\n直聘",
+      "extractedKeywords": [
+        "未命名岗位"
+      ],
+      "source": "manual",
+      "fetchedAt": "2026-08-08T06:50:41.734Z",
+      "status": "active",
+      "isOutsourcing": false,
+      "outsourcingConfidence": "direct",
+      "outsourcingReason": "",
+      "pasteChannel": "other"
+    },
     {
       "id": "0bdcbe94-a3fa-4fcf-ac97-02ff1a843b33",
       "company": "腾讯",

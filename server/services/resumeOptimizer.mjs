@@ -1,6 +1,13 @@
 import crypto from 'node:crypto'
 import { extractKeywords, reorderByKeywords, scoreText } from './keywordExtract.mjs'
-import { getProfileLabel, sortWorkByProfile, PROFILE_CONFIG } from './profileWeights.mjs'
+import { getProfileLabel, sortWorkChronologically } from './profileWeights.mjs'
+import {
+  cleanResumeSummary,
+  finalizeGeneratedResume,
+  GENERATION_STANDARDS_VERSION,
+  normalizeDisplayTitle,
+  prepareResumeForGeneration,
+} from './resumeGenerationStandards.mjs'
 
 /**
  * 根据 JD 优化简历：重排亮点/技能、微调简介与标题
@@ -11,13 +18,13 @@ import { getProfileLabel, sortWorkByProfile, PROFILE_CONFIG } from './profileWei
  */
 export function optimizeResumeForJob(baseResume, job, options = {}) {
   const profile = options.profile ?? 'business-expert'
-  const profileCfg = PROFILE_CONFIG[profile] ?? PROFILE_CONFIG['business-expert']
+  const preparedResume = prepareResumeForGeneration(baseResume, options.profileData)
   const jdText = [job.title, job.company, job.description, job.requirements]
     .filter(Boolean)
     .join('\n')
 
   const keywords = extractKeywords(jdText)
-  const allResumeText = JSON.stringify(baseResume)
+  const allResumeText = JSON.stringify(preparedResume)
   const overall = scoreText(allResumeText, keywords)
   const matchScore = keywords.length
     ? Math.round((overall.matched.length / keywords.length) * 100)
@@ -27,16 +34,10 @@ export function optimizeResumeForJob(baseResume, job, options = {}) {
     (kw) => !allResumeText.toLowerCase().includes(kw.toLowerCase()),
   )
 
-  const tailoredTitle = tailorTitle(baseResume.basicInfo?.title, job, keywords)
-  const tailoredSummary = tailorSummary(
-    baseResume.summary,
-    job,
-    keywords,
-    overall.matched,
-    profileCfg.summaryPrefix,
-  )
+  const tailoredTitle = normalizeDisplayTitle(preparedResume.basicInfo?.title)
+  const tailoredSummary = cleanResumeSummary(preparedResume.summary)
 
-  let workExperiences = (baseResume.workExperiences ?? []).map((work) => ({
+  let workExperiences = (preparedResume.workExperiences ?? []).map((work) => ({
     ...work,
     highlights: reorderByKeywords(work.highlights ?? [], keywords),
     description: work.description,
@@ -53,15 +54,9 @@ export function optimizeResumeForJob(baseResume, job, options = {}) {
       : undefined,
   }))
 
-  workExperiences = sortWorkByProfile(workExperiences, profile, keywords)
+  workExperiences = sortWorkChronologically(workExperiences)
 
-  workExperiences.sort((a, b) => {
-    const scoreA = scoreText(JSON.stringify(a), keywords).score
-    const scoreB = scoreText(JSON.stringify(b), keywords).score
-    return scoreB - scoreA
-  })
-
-  const projectExperiences = (baseResume.projectExperiences ?? [])
+  const projectExperiences = (preparedResume.projectExperiences ?? [])
     .map((proj) => ({
       ...proj,
       highlights: reorderByKeywords(proj.highlights ?? [], keywords),
@@ -72,7 +67,7 @@ export function optimizeResumeForJob(baseResume, job, options = {}) {
       return scoreB - scoreA
     })
 
-  const skillGroups = (baseResume.skillGroups ?? [])
+  const skillGroups = (preparedResume.skillGroups ?? [])
     .map((group) => ({
       ...group,
       items: reorderByKeywords(group.items ?? [], keywords),
@@ -81,14 +76,14 @@ export function optimizeResumeForJob(baseResume, job, options = {}) {
     .sort((a, b) => b._score - a._score)
     .map(({ _score, ...group }) => group)
 
-  const selfEvaluation = reorderByKeywords(baseResume.selfEvaluation ?? [], keywords)
+  const selfEvaluation = reorderByKeywords(preparedResume.selfEvaluation ?? [], keywords)
 
   const suggestions = buildSuggestions(missingKeywords, matchScore, job, profile)
 
-  const resume = {
-    ...baseResume,
+  const resume = finalizeGeneratedResume({
+    ...preparedResume,
     basicInfo: {
-      ...baseResume.basicInfo,
+      ...preparedResume.basicInfo,
       title: tailoredTitle,
     },
     summary: tailoredSummary,
@@ -96,7 +91,7 @@ export function optimizeResumeForJob(baseResume, job, options = {}) {
     projectExperiences,
     skillGroups,
     selfEvaluation,
-  }
+  })
 
   return {
     resume,
@@ -111,52 +106,10 @@ export function optimizeResumeForJob(baseResume, job, options = {}) {
       missingKeywords: missingKeywords.slice(0, 15),
       extractedKeywords: keywords.slice(0, 30),
       suggestions,
+      standardsVersion: GENERATION_STANDARDS_VERSION,
       optimizedAt: new Date().toISOString(),
     },
   }
-}
-
-function tailorTitle(currentTitle, job, keywords) {
-  if (!currentTitle) return currentTitle
-
-  const jdLower = `${job.title} ${job.description ?? ''}`.toLowerCase()
-  const extras = []
-
-  if (jdLower.includes('组长') || jdLower.includes('leader') || jdLower.includes('管理')) {
-    if (!currentTitle.includes('组长') && !currentTitle.includes('负责人')) {
-      extras.push('测试组长')
-    }
-  }
-  if (jdLower.includes('自动化') && !currentTitle.includes('自动化')) {
-    extras.push('自动化')
-  }
-  if (jdLower.includes('海外') && !currentTitle.includes('海外')) {
-    extras.push('海外')
-  }
-
-  if (!extras.length) return currentTitle
-  return `${currentTitle} · ${extras.slice(0, 2).join('/')}`
-}
-
-function tailorSummary(summary, job, keywords, matched, profilePrefix) {
-  if (!summary) return summary
-
-  const companyHint = job.company ? `，目标岗位：${job.company} ${job.title}` : ''
-  const topMatched = matched.slice(0, 5).join('、')
-
-  let prefix = ''
-  if (topMatched) {
-    prefix = `核心匹配：${topMatched}。`
-  } else if (profilePrefix) {
-    prefix = `${profilePrefix} `
-  }
-
-  if (summary.includes('核心匹配：')) {
-    return summary.replace(/^核心匹配：[^。]+。/, prefix)
-  }
-
-  const body = summary.startsWith(profilePrefix ?? '') ? summary : summary
-  return `${prefix}${body}${companyHint ? `（${companyHint.replace(/^，/, '')}）` : ''}`
 }
 
 function buildSuggestions(missingKeywords, matchScore, job, profile) {

@@ -20,6 +20,8 @@ import {
   polishCoverLetter,
   polishSelfIntro,
 } from './services/llmService.mjs'
+import { extractJobInfoFromScreenshots } from './services/screenshotExtractor.mjs'
+import { buildJobAnalysis, enrichJobAnalysis, mergeParsedJobInfo } from './services/jobAnalysis.mjs'
 import {
   fetchBossJobs,
   getBossStatus,
@@ -31,6 +33,7 @@ import {
   initLiepinConfigIfMissing,
 } from './services/liepinFetcher.mjs'
 import { enrichJob, enrichJobs } from './services/jobClassifier.mjs'
+import { detectResumeProfile } from './services/profileDetector.mjs'
 import { computeReminders } from './services/reminderService.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -96,7 +99,7 @@ async function ensureApplication(jobId, job) {
 const app = express()
 app.set('trust proxy', true)
 app.use(cors())
-app.use(express.json({ limit: '2mb' }))
+app.use(express.json({ limit: '50mb' }))
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true, service: 'chenmo-job-assistant' })
@@ -312,7 +315,13 @@ app.delete('/api/jobs/:id', async (req, res) => {
 
 app.get('/api/variants', async (_req, res) => {
   const store = await readJson(VARIANTS_PATH, { variants: [] })
-  res.json(store)
+  res.json({
+    ...store,
+    variants: (store.variants ?? []).map((variant) => ({
+      ...variant,
+      jobAnalysis: enrichJobAnalysis(variant.jobAnalysis),
+    })),
+  })
 })
 
 app.get('/api/variants/:id', async (req, res) => {
@@ -322,7 +331,10 @@ app.get('/api/variants/:id', async (req, res) => {
     res.status(404).json({ error: 'variant not found' })
     return
   }
-  res.json(variant)
+  res.json({
+    ...variant,
+    jobAnalysis: enrichJobAnalysis(variant.jobAnalysis),
+  })
 })
 
 async function deleteVariantScreenshot(variantId) {
@@ -330,13 +342,31 @@ async function deleteVariantScreenshot(variantId) {
     const files = await fs.readdir(SCREENSHOTS_DIR)
     await Promise.all(
       files
-        .filter((filename) => filename.startsWith(`${variantId}.`))
+        .filter(
+          (filename) =>
+            filename.startsWith(`${variantId}.`) || filename.startsWith(`${variantId}-`),
+        )
         .map((filename) => fs.unlink(path.join(SCREENSHOTS_DIR, filename))),
     )
   } catch {
     /* 截图目录不存在或已删除时忽略 */
   }
 }
+
+app.get('/api/resume', async (req, res) => {
+  if (!isLocalRequest(req)) {
+    res.status(403).json({ error: '仅支持本机访问' })
+    return
+  }
+
+  const resume = await readJson(RESUME_PATH, null)
+  if (!resume) {
+    res.status(404).json({ error: 'resume not found' })
+    return
+  }
+
+  res.json(withPublicWebsite(resume, req))
+})
 
 app.patch('/api/variants/:id', async (req, res) => {
   const store = await readJson(VARIANTS_PATH, { variants: [] })
@@ -354,6 +384,142 @@ app.patch('/api/variants/:id', async (req, res) => {
     ...(company !== undefined && { company }),
     ...(jobTitle !== undefined && { jobTitle }),
     ...(jdSummary !== undefined && { jdSummary }),
+  }
+
+  await writeJson(VARIANTS_PATH, store)
+  res.json(store.variants[index])
+})
+
+app.post('/api/variants/:id/refresh', async (req, res) => {
+  if (!isLocalRequest(req)) {
+    res.status(403).json({ error: '仅支持本机访问' })
+    return
+  }
+
+  const store = await readJson(VARIANTS_PATH, { variants: [] })
+  const index = (store.variants ?? []).findIndex((v) => v.id === req.params.id)
+  if (index === -1) {
+    res.status(404).json({ error: 'variant not found' })
+    return
+  }
+
+  const current = store.variants[index]
+  const job = await getJobById(current.jobId)
+  if (!job) {
+    res.status(404).json({ error: 'job not found' })
+    return
+  }
+
+  const { resume: clientResume, profile = current.meta?.profile ?? 'business-expert' } = req.body ?? {}
+  const baseResume = clientResume ?? (await readJson(RESUME_PATH, null))
+  if (!baseResume) {
+    res.status(400).json({ error: 'resume data missing' })
+    return
+  }
+
+  const optimized = optimizeResumeForJob(baseResume, job, { profile })
+  const jobAnalysis = buildJobAnalysis(job, optimized.meta, {
+    profileLabel: optimized.meta.profileLabel,
+    extractionSource: current.jobAnalysis?.extractionSource ?? 'jd',
+  })
+  store.variants[index] = {
+    ...current,
+    resume: withPublicWebsite(optimized.resume, req),
+    meta: optimized.meta,
+    matchScore: optimized.meta.matchScore,
+    jobTitle: job.title,
+    company: job.company,
+    jobAnalysis,
+  }
+
+  await writeJson(VARIANTS_PATH, store)
+  res.json(store.variants[index])
+})
+
+app.post('/api/variants/:id/analyze', async (req, res) => {
+  if (!isLocalRequest(req)) {
+    res.status(403).json({ error: '仅支持本机访问' })
+    return
+  }
+
+  const store = await readJson(VARIANTS_PATH, { variants: [] })
+  const index = (store.variants ?? []).findIndex((v) => v.id === req.params.id)
+  if (index === -1) {
+    res.status(404).json({ error: 'variant not found' })
+    return
+  }
+
+  const current = store.variants[index]
+  let job = await getJobById(current.jobId)
+  if (!job) {
+    res.status(404).json({ error: 'job not found' })
+    return
+  }
+
+  let extractionSource = current.jobAnalysis?.extractionSource ?? 'jd'
+  const screenshotImages = await readAllScreenshotsAsBase64(current.id)
+  const needsExtract =
+    !job.company ||
+    job.company === '未命名公司' ||
+    !job.title ||
+    job.title === '未命名岗位' ||
+    !job.description?.trim() ||
+    !job.requirements?.trim()
+
+  if (screenshotImages.length > 0 && needsExtract) {
+    try {
+      const extracted = await extractJobInfoFromScreenshots(screenshotImages)
+      if (extracted) {
+        const merged = mergeParsedJobInfo(
+          {
+            company: job.company,
+            title: job.title,
+            description: job.description,
+            requirements: job.requirements,
+          },
+          extracted,
+        )
+        job = enrichJob({
+          ...job,
+          company: merged.company || job.company,
+          title: merged.title || job.title,
+          description: merged.description || job.description,
+          requirements: merged.requirements || job.requirements,
+        })
+        extractionSource = current.jdSummary ? 'mixed' : 'screenshot'
+
+        const jobStore = await readJson(JOBS_PATH, { jobs: [] })
+        const jobs = jobStore.jobs ?? []
+        const jobIndex = jobs.findIndex((item) => item.id === job.id)
+        if (jobIndex >= 0) {
+          jobs[jobIndex] = job
+          await writeJson(JOBS_PATH, { jobs })
+        }
+      }
+    } catch (err) {
+      console.error('[analyze] screenshot extract failed:', err.message)
+    }
+  }
+
+  const profile = current.meta?.profile ?? 'business-expert'
+  const optimized = optimizeResumeForJob(current.resume, job, { profile })
+  const jobAnalysis = buildJobAnalysis(job, optimized.meta, {
+    profileLabel: optimized.meta.profileLabel,
+    extractionSource,
+  })
+
+  store.variants[index] = {
+    ...current,
+    company: job.company,
+    jobTitle: job.title,
+    matchScore: optimized.meta.matchScore,
+    meta: optimized.meta,
+    resume: optimized.resume,
+    jobAnalysis,
+    jdSummary:
+      [job.description, job.requirements].filter(Boolean).join('\n').slice(0, 500) ||
+      current.jdSummary ||
+      undefined,
   }
 
   await writeJson(VARIANTS_PATH, store)
@@ -390,6 +556,7 @@ app.post('/api/optimize', async (req, res) => {
 
   const optimized = optimizeResumeForJob(baseResume, job, { profile })
   const variant = createVariantRecord(baseResume, job, optimized)
+  variant.resume = withPublicWebsite(variant.resume, req)
 
   const variantStore = await readJson(VARIANTS_PATH, { variants: [] })
   const variants = [
@@ -726,13 +893,25 @@ function resolvePublicSiteUrl(req) {
   return `${proto}://${host}`.replace(/\/$/, '')
 }
 
+function withPublicWebsite(resume, req) {
+  const url = resolvePublicSiteUrl(req)
+  if (!url || !resume) return resume
+  return {
+    ...resume,
+    basicInfo: {
+      ...resume.basicInfo,
+      website: resume.basicInfo?.website?.trim() || url,
+    },
+  }
+}
+
 function resolveResumePublicUrl(req, variantId) {
   const base = resolvePublicSiteUrl(req)
   if (base) return `${base}/r/${variantId}`
   return `/r/${variantId}`
 }
 
-async function saveScreenshotBase64(base64, variantId) {
+async function saveScreenshotBase64(base64, variantId, index = 0) {
   if (!base64?.startsWith('data:image')) return null
   const match = base64.match(/^data:image\/(\w+);base64,(.+)$/)
   if (!match) return null
@@ -742,9 +921,39 @@ async function saveScreenshotBase64(base64, variantId) {
     throw new Error('截图过大，请压缩后重试（最大 3MB）')
   }
   await fs.mkdir(SCREENSHOTS_DIR, { recursive: true })
-  const filename = `${variantId}.${ext}`
+  const filename = `${variantId}-${index}.${ext}`
   await fs.writeFile(path.join(SCREENSHOTS_DIR, filename), buffer)
   return `/api/uploads/screenshots/${filename}`
+}
+
+async function saveScreenshotsBase64(base64List, variantId) {
+  const urls = []
+  for (let index = 0; index < base64List.length; index += 1) {
+    const url = await saveScreenshotBase64(base64List[index], variantId, index)
+    if (url) urls.push(url)
+  }
+  return urls
+}
+
+async function readScreenshotAsBase64(variantId, index = 0) {
+  const files = await fs.readdir(SCREENSHOTS_DIR).catch(() => [])
+  const prefix = `${variantId}-${index}.`
+  const filename = files.find((name) => name.startsWith(prefix))
+  if (!filename) return null
+  const buffer = await fs.readFile(path.join(SCREENSHOTS_DIR, filename))
+  const ext = filename.split('.').pop()?.toLowerCase()
+  const mime = ext === 'png' ? 'image/png' : 'image/jpeg'
+  return `data:${mime};base64,${buffer.toString('base64')}`
+}
+
+async function readAllScreenshotsAsBase64(variantId) {
+  const images = []
+  for (let index = 0; index < 9; index += 1) {
+    const base64 = await readScreenshotAsBase64(variantId, index)
+    if (!base64) break
+    images.push(base64)
+  }
+  return images
 }
 
 app.use('/api/uploads/screenshots', express.static(SCREENSHOTS_DIR))
@@ -773,6 +982,7 @@ app.get('/api/public/variants/:id', async (req, res) => {
     createdAt: variant.createdAt,
     jdSummary: variant.jdSummary,
     screenshotUrl: variant.screenshotUrl,
+    screenshotUrls: variant.screenshotUrls,
     profileSiteUrl: variant.profileSiteUrl,
     publicUrl: variant.publicUrl,
   })
@@ -787,27 +997,72 @@ app.post('/api/resume-maker', async (req, res) => {
   const {
     jdText = '',
     screenshotBase64,
-    profile = 'business-expert',
+    screenshotsBase64,
     resume: clientResume,
   } = req.body ?? {}
 
-  if (!jdText.trim()) {
-    res.status(400).json({ error: '请填写或粘贴招聘 JD' })
+  const screenshotInputs = Array.isArray(screenshotsBase64)
+    ? screenshotsBase64
+    : screenshotBase64
+      ? [screenshotBase64]
+      : []
+
+  if (!jdText.trim() && screenshotInputs.length === 0) {
+    res.status(400).json({ error: '请至少上传一张招聘截图或粘贴 JD' })
     return
   }
 
-  const parsed = parseJdText(jdText)
+  let parsed = parseJdText(jdText)
+  let extractionSource = 'jd'
+
+  if (screenshotInputs.length > 0) {
+    try {
+      const extracted = await extractJobInfoFromScreenshots(screenshotInputs)
+      if (extracted) {
+        parsed = mergeParsedJobInfo(parsed, extracted)
+        extractionSource = jdText.trim() ? 'mixed' : 'screenshot'
+      }
+    } catch (err) {
+      console.error('[resume-maker] screenshot extract failed:', err.message)
+    }
+  }
+
+  const profileSource = [
+    parsed.title,
+    parsed.company,
+    parsed.description,
+    parsed.requirements,
+    jdText,
+  ]
+    .filter(Boolean)
+    .join('\n')
+  const { profile, label: profileLabel } = detectResumeProfile(profileSource)
+
   const job = createManualJob({
     company: parsed.company,
     title: parsed.title?.trim() || '未命名岗位',
     description: parsed.description || jdText,
     requirements: parsed.requirements,
   })
-  job.pasteChannel = parsed.channel ?? 'other'
+  job.pasteChannel = parsed.channel ?? (screenshotInputs.length > 0 ? 'boss' : 'other')
 
   const jobStore = await readJson(JOBS_PATH, { jobs: [] })
   await writeJson(JOBS_PATH, { jobs: [job, ...(jobStore.jobs ?? [])] })
-  await ensureApplication(job.id, job)
+  const application = await ensureApplication(job.id, job)
+  if (application.company !== job.company || application.jobTitle !== job.title) {
+    const appStore = await readJson(APPLICATIONS_PATH, { applications: [] })
+    const apps = appStore.applications ?? []
+    const appIndex = apps.findIndex((item) => item.jobId === job.id)
+    if (appIndex >= 0) {
+      apps[appIndex] = {
+        ...apps[appIndex],
+        company: job.company,
+        jobTitle: job.title,
+        updatedAt: new Date().toISOString(),
+      }
+      await writeJson(APPLICATIONS_PATH, { applications: apps })
+    }
+  }
 
   const baseResume = clientResume ?? (await readJson(RESUME_PATH, null))
   if (!baseResume) {
@@ -817,26 +1072,33 @@ app.post('/api/resume-maker', async (req, res) => {
 
   const optimized = optimizeResumeForJob(baseResume, job, { profile })
   const variant = createVariantRecord(baseResume, job, optimized)
+  variant.jobAnalysis = buildJobAnalysis(job, optimized.meta, {
+    profileLabel,
+    extractionSource,
+  })
 
   const profileSiteUrl = resolvePublicSiteUrl(req)
   variant.publicUrl = resolveResumePublicUrl(req, variant.id)
   variant.profileSiteUrl = profileSiteUrl || undefined
-  variant.jdSummary = jdText.trim().slice(0, 500)
+  variant.jdSummary = jdText.trim()
+    ? jdText.trim().slice(0, 500)
+    : [parsed.description, parsed.requirements].filter(Boolean).join('\n').slice(0, 500) || undefined
 
-  if (screenshotBase64) {
+  if (screenshotInputs.length > 0) {
     try {
-      variant.screenshotUrl = await saveScreenshotBase64(screenshotBase64, variant.id)
+      const urls = await saveScreenshotsBase64(screenshotInputs, variant.id)
+      variant.screenshotUrls = urls
+      variant.screenshotUrl = urls[0]
     } catch (err) {
       res.status(400).json({ error: err.message || '截图保存失败' })
       return
     }
   }
 
-  if (profileSiteUrl && variant.resume?.summary) {
-    variant.resume = {
-      ...variant.resume,
-      summary: `${variant.resume.summary}\n\n个人主页：${profileSiteUrl}`,
-    }
+  if (profileSiteUrl && variant.resume) {
+    variant.resume = withPublicWebsite(variant.resume, req)
+  } else if (variant.resume) {
+    variant.resume = withPublicWebsite(variant.resume, req)
   }
 
   const variantStore = await readJson(VARIANTS_PATH, { variants: [] })
@@ -846,15 +1108,45 @@ app.post('/api/resume-maker', async (req, res) => {
   ]
   await writeJson(VARIANTS_PATH, { variants })
 
-  res.json({ ok: true, variant, job })
+  res.json({ ok: true, variant, job, profile, profileLabel })
+})
+
+app.post('/api/detect-profile', async (req, res) => {
+  if (!isLocalRequest(req)) {
+    res.status(403).json({ error: '仅支持本机访问' })
+    return
+  }
+
+  const { jdText = '' } = req.body ?? {}
+  const parsed = parseJdText(jdText)
+  const combined = [
+    parsed.title,
+    parsed.company,
+    parsed.description,
+    parsed.requirements,
+    jdText,
+  ]
+    .filter(Boolean)
+    .join('\n')
+
+  res.json(detectResumeProfile(combined))
 })
 
 async function startServer() {
   if (IS_PRODUCTION) {
     try {
       await fs.access(DIST_PATH)
-      app.use(express.static(DIST_PATH))
+      app.use(
+        express.static(DIST_PATH, {
+          setHeaders(res, filePath) {
+            if (path.basename(filePath) === 'index.html') {
+              res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
+            }
+          },
+        }),
+      )
       app.get(/^(?!\/api).*/, (_req, res) => {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
         res.sendFile(path.join(DIST_PATH, 'index.html'))
       })
       console.log(`[chenmo] serving static files from ${DIST_PATH}`)
