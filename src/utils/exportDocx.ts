@@ -12,6 +12,7 @@ import {
 } from 'docx'
 import { saveAs } from 'file-saver'
 import type { Resume, WorkExperience } from '../types/resume'
+import { formatWebsiteDisplayUrl } from './publicSiteUrl'
 import { visibleEducations } from './resumeEditText'
 import { getWorkDisplayCompany } from './workDisplay'
 import { cleanResumeSummary, normalizeDisplayTitle } from './cleanResumeSummary'
@@ -50,10 +51,10 @@ function workParagraph(props: WorkParagraphOptions): Paragraph {
   })
 }
 
-function sectionTitle(text: string): Paragraph {
+function sectionTitle(text: string, options?: { extraBefore?: number }): Paragraph {
   return new Paragraph({
     spacing: {
-      before: PARAGRAPH_SPACING.sectionBefore,
+      before: PARAGRAPH_SPACING.sectionBefore + (options?.extraBefore ?? 0),
       after: PARAGRAPH_SPACING.sectionAfter,
     },
     indent: { left: 180 },
@@ -183,33 +184,17 @@ function workExperienceParagraphs(work: WorkExperience, isFirst: boolean): Parag
 }
 
 function educationParagraph(school: string, major: string | undefined, degree: string | undefined): Paragraph {
-  const schoolLine = [school, major].filter(Boolean).join(' · ')
-  const children = [
-    resumeRun({
-      text: schoolLine,
-      bold: true,
-      color: RESUME_COLOR.heading,
-      characterSpacing: 0,
-    }),
-  ]
-
-  if (degree?.trim()) {
-    children.push(
-      resumeRun({
-        text: `\t${degree.trim()}`,
-        size: RESUME_SIZE.date,
-        color: RESUME_COLOR.muted,
-        characterSpacing: 0,
-      }),
-    )
-  }
-
+  const schoolLine = [school, major, degree?.trim()].filter(Boolean).join(' · ')
   return new Paragraph({
     spacing: { after: 80, ...BODY_LINE_SPACING },
-    tabStops: degree?.trim()
-      ? [{ type: TabStopType.RIGHT, position: TAB_RIGHT }]
-      : undefined,
-    children,
+    children: [
+      resumeRun({
+        text: schoolLine,
+        bold: true,
+        color: RESUME_COLOR.heading,
+        characterSpacing: 0,
+      }),
+    ],
   })
 }
 
@@ -263,7 +248,7 @@ export async function exportToWord(resume: Resume, filename?: string): Promise<v
   ]
 
   if (basicInfo.website?.trim()) {
-    const displayUrl = basicInfo.website.replace(/^https?:\/\//, '')
+    const displayUrl = formatWebsiteDisplayUrl(basicInfo.website)
     children.push(
       new Paragraph({
         alignment: AlignmentType.CENTER,
@@ -306,16 +291,20 @@ export async function exportToWord(resume: Resume, filename?: string): Promise<v
 
   const educations = visibleEducations(resume.educations)
   if (educations.length > 0) {
-    children.push(sectionTitle('学历'))
+    children.push(
+      sectionTitle('学历', { extraBefore: PARAGRAPH_SPACING.sectionTitleExtraBefore }),
+    )
     for (const edu of educations) {
       children.push(educationParagraph(edu.school, edu.major, edu.degree))
     }
   }
 
   if (resume.selfEvaluation && resume.selfEvaluation.length > 0) {
-    children.push(sectionTitle('自我评价'))
+    children.push(
+      sectionTitle('自我评价', { extraBefore: PARAGRAPH_SPACING.sectionTitleExtraBefore }),
+    )
     for (const item of resume.selfEvaluation) {
-      children.push(bulletItem(toReadableResumeText(item), 0))
+      children.push(bulletItem(toReadableResumeText(item)))
     }
   }
 

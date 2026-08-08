@@ -1,6 +1,7 @@
 import type { PersonalProfile } from '../types/profile'
 import type { Resume } from '../types/resume'
 import { buildSummaryFromAbout, normalizeDisplayTitle } from './resumeGenerationStandards'
+import { shouldSyncWebsite } from './publicSiteUrl'
 import { loadProfile } from './storage'
 
 /** 将个人介绍页的最新信息合并进主简历（遵循简历生成规范） */
@@ -33,13 +34,18 @@ export function applyPublicSiteUrl(
 ): Resume {
   const url = publicSiteUrl?.trim()
   if (!url) return resume
-  if (!options?.force && resume.basicInfo.website?.trim()) return resume
+  if (
+    !options?.force &&
+    !shouldSyncWebsite(resume.basicInfo.website, url)
+  ) {
+    return resume
+  }
 
   return {
     ...resume,
     basicInfo: {
       ...resume.basicInfo,
-      website: url,
+      website: url.replace(/\/+$/, ''),
     },
   }
 }

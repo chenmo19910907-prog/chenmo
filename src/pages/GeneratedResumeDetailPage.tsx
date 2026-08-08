@@ -6,6 +6,7 @@ import { exportToWord } from '../utils/exportDocx'
 import { analyzeVariant, fetchMasterResume, fetchVariantById, refreshVariant, updateVariant } from '../utils/jobApi'
 import { getResumePublicUrl } from '../utils/accessMode'
 import { getVariantScreenshotUrls } from '../utils/variantScreenshots'
+import { shouldSyncWebsite } from '../utils/publicSiteUrl'
 import { applyProfileToResume, applyPublicSiteUrl } from '../utils/resumeSync'
 import { parseVariantMeta, serializeVariantMeta } from '../utils/resumeEditText'
 import { useAccessMode } from '../context/AccessModeContext'
@@ -55,9 +56,10 @@ export default function GeneratedResumeDetailPage() {
   }
 
   useEffect(() => {
-    if (!id || !variant || !publicSiteUrl || variant.resume.basicInfo.website?.trim()) return
+    if (!id || !variant || !publicSiteUrl) return
+    if (!shouldSyncWebsite(variant.resume.basicInfo.website, publicSiteUrl)) return
 
-    const nextResume = applyPublicSiteUrl(variant.resume, publicSiteUrl)
+    const nextResume = applyPublicSiteUrl(variant.resume, publicSiteUrl, { force: true })
     setVariant((current) => (current ? { ...current, resume: nextResume } : current))
     void updateVariant(id, { resume: nextResume })
       .then(setVariant)

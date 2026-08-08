@@ -1,4 +1,5 @@
 import EditableSection from './EditableSection'
+import { formatWebsiteDisplayUrl } from '../utils/publicSiteUrl'
 import type { Resume, WorkExperience } from '../types/resume'
 import {
   linesToList,
@@ -26,12 +27,14 @@ const MAX_WORK_HIGHLIGHTS = 5
 function Section({
   title,
   children,
+  className = '',
 }: {
   title: string
   children: React.ReactNode
+  className?: string
 }) {
   return (
-    <section className="mb-9 last:mb-0">
+    <section className={`mb-9 last:mb-0 ${className}`}>
       <h2 className="mb-4 border-l-[3px] border-blue-600 pl-3 text-[13px] font-bold uppercase tracking-[0.18em] text-slate-800">
         {title}
       </h2>
@@ -68,7 +71,7 @@ function WebsiteCta({ url }: { url?: string }) {
         rel="noopener noreferrer"
         className="ml-1 text-blue-600 underline decoration-blue-200 underline-offset-2 hover:text-blue-700"
       >
-        {url.replace(/^https?:\/\//, '')}
+        {formatWebsiteDisplayUrl(url)}
       </a>
     </p>
   )
@@ -163,13 +166,13 @@ function EducationListPreview({ resume }: { resume: Resume }) {
       {educations.map((edu) => (
         <div
           key={edu.id}
-          className="flex flex-wrap items-baseline justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2 text-[14px]"
+          className="rounded-lg bg-slate-50 px-3 py-2 text-[14px]"
         >
           <span className="font-medium text-slate-800">
             {edu.school}
             {edu.major && <span className="font-normal text-slate-500"> · {edu.major}</span>}
+            {edu.degree && <span className="font-normal text-slate-500"> · {edu.degree}</span>}
           </span>
-          <span className="text-slate-400">{edu.degree}</span>
         </div>
       ))}
     </div>
@@ -264,7 +267,7 @@ export default function ResumeView({ resume, editable = false, onResumeChange }:
       )}
 
       {resume.educations.length > 0 && (editable || visibleEducations(resume.educations).length > 0) && (
-        <Section title="学历">
+        <Section title="学历" className="mt-4">
           <EditableSection
             editable={editable}
             title="编辑学历"
@@ -290,16 +293,16 @@ export default function ResumeView({ resume, editable = false, onResumeChange }:
       )}
 
       {resume.selfEvaluation && resume.selfEvaluation.length > 0 && (
-        <Section title="自我评价">
+        <Section title="自我评价" className="mt-4">
           <EditableSection
             editable={editable}
             title="编辑自我评价"
             hint="每行一条评价。"
             getDraft={() => listToLines(resume.selfEvaluation ?? [])}
             onSave={(draft) => patchResume({ selfEvaluation: linesToList(draft) })}
-            renderPreview={(draft) => <BulletList items={linesToList(draft)} />}
+            renderPreview={(draft) => <BulletList items={linesToList(draft)} className="pl-4" />}
           >
-            <BulletList items={resume.selfEvaluation} />
+            <BulletList items={resume.selfEvaluation} className="pl-4" />
           </EditableSection>
         </Section>
       )}

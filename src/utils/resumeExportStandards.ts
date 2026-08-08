@@ -54,6 +54,8 @@ export const RESUME_EXPORT_SPEC = {
     /** 个人简介段间，对应预览 space-y-3（12px ≈ 180 twips） */
     summaryAfter: 180,
     sectionBefore: 200,
+    /** 学历、自我评价等区块标题额外段前距（twips） */
+    sectionTitleExtraBefore: 160,
     /** 区块标题与正文，对应预览 mb-4（16px ≈ 240 twips） */
     sectionAfter: 240,
     /** 工作经历段间，对应预览 space-y-7（28px ≈ 480 twips） */
@@ -93,7 +95,7 @@ export const RESUME_EXPORT_HEADER_RULES = [
   '姓名加粗居中',
   '头衔居中（normalizeDisplayTitle 去尾缀）',
   '电话 · 邮箱 · 地点 · 学历 居中',
-  '有个人主页：更多项目与作品见个人主页：{url}（链接去 https://）',
+  '有个人主页：更多项目与作品见个人主页：{url}（链接保留 https://）',
   '页眉底部分隔线（F1F5F9）',
 ] as const
 
@@ -128,9 +130,8 @@ export const RESUME_EXPORT_WORK_RULES = [
 ] as const
 
 /**
- * 学历：单行不换行——左侧「学校 · 专业」，右侧学位右对齐。
+ * 学历：单行「学校 · 专业 · 学位」。
  */
 export const RESUME_EXPORT_EDUCATION_RULES = [
-  '学校 · 专业 与 学位 同一行',
-  '学位使用 date 字号与 muted 色',
+  '学校 · 专业 · 学位 同一行，点号间隔',
 ] as const

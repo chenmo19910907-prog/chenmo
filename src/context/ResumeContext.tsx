@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import type { Resume } from '../types/resume'
 import { loadResume, mergeResumeSkillGroups, resetResume, saveResume } from '../utils/storage'
+import { shouldSyncWebsite } from '../utils/publicSiteUrl'
 import { applyProfileToResume, applyPublicSiteUrl } from '../utils/resumeSync'
 import { fetchMasterResume } from '../utils/jobApi'
 import { useAccessMode } from './AccessModeContext'
@@ -35,8 +36,8 @@ export function ResumeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!publicSiteUrl) return
     setResume((prev) => {
-      if (prev.basicInfo.website?.trim()) return prev
-      const next = applyPublicSiteUrl(prev, publicSiteUrl)
+      if (!shouldSyncWebsite(prev.basicInfo.website, publicSiteUrl)) return prev
+      const next = applyPublicSiteUrl(prev, publicSiteUrl, { force: true })
       saveResume(next)
       return next
     })

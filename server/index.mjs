@@ -893,14 +893,27 @@ function resolvePublicSiteUrl(req) {
   return `${proto}://${host}`.replace(/\/$/, '')
 }
 
+function shouldSyncWebsite(website, publicSiteUrl) {
+  const canonical = (publicSiteUrl || '').trim().replace(/\/+$/, '')
+  if (!canonical) return false
+
+  const current = website?.trim()
+  if (!current) return true
+  if (current.replace(/\/+$/, '') === canonical) return false
+
+  return /natapp|cpolar|ngrok|trycloudflare|localhost|127\.0\.0\.1|your-domain\.com/i.test(current)
+}
+
 function withPublicWebsite(resume, req) {
   const url = resolvePublicSiteUrl(req)
   if (!url || !resume) return resume
+  const current = resume.basicInfo?.website?.trim()
+  const website = shouldSyncWebsite(current, url) ? url : current || url
   return {
     ...resume,
     basicInfo: {
       ...resume.basicInfo,
-      website: resume.basicInfo?.website?.trim() || url,
+      website,
     },
   }
 }

@@ -31,6 +31,7 @@ function PlatformDemoLinks() {
     <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
       <p className="text-sm font-medium text-slate-800">
         {isLocal ? '本地演示链接' : '在线演示链接'}
+        <span className="ml-1 font-normal text-slate-500">（PC 端查看正确排版）</span>
       </p>
       <ul className="mt-3 space-y-3">
         {links.map((link) => (

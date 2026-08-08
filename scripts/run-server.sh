@@ -25,4 +25,12 @@ export NODE_ENV=production
 : "${CHENMO_API_PORT:=3456}"
 export CHENMO_API_PORT
 
+INDEX_HTML="$ROOT/dist/index.html"
+if [[ -f "$INDEX_HTML" ]] && grep -q '/chenmo/assets/' "$INDEX_HTML"; then
+  echo "[chenmo] dist 为 GitHub Pages 构建，正在恢复本机构建..." >&2
+  (cd "$ROOT" && unset GITHUB_PAGES && npm run build) >&2 || {
+    echo "[chenmo] 本机构建失败，本地页面可能无法打开" >&2
+  }
+fi
+
 exec node server/index.mjs

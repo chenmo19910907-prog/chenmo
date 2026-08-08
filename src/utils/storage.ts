@@ -36,6 +36,10 @@ function isStaleSummary(summary: string | undefined): boolean {
 const RESUME_WORK_HEADER_VERSION = 2
 const RESUME_HEADER_VERSION_KEY = 'chenmo-resume-header-version'
 
+/** 个人网站地址更新时递增，用于将浏览器缓存中的旧穿透地址同步为 GitHub Pages */
+const WEBSITE_SYNC_VERSION = 1
+const WEBSITE_SYNC_KEY = 'chenmo-website-sync-version'
+
 function mergeWorkExperiencesFromDefaults(
   stored: WorkExperience[],
   defaults: WorkExperience[],
@@ -74,6 +78,38 @@ function syncWorkHeaderVersion(): boolean {
   }
 }
 
+function syncWebsiteFromDefaults(
+  parsed: Resume,
+  defaults: Resume,
+): { resume: Resume; changed: boolean } {
+  const canonical = defaults.basicInfo.website?.trim()
+  if (!canonical) return { resume: parsed, changed: false }
+
+  try {
+    const currentVersion = localStorage.getItem(WEBSITE_SYNC_KEY)
+    if (currentVersion === String(WEBSITE_SYNC_VERSION)) {
+      return { resume: parsed, changed: false }
+    }
+    localStorage.setItem(WEBSITE_SYNC_KEY, String(WEBSITE_SYNC_VERSION))
+  } catch {
+    return { resume: parsed, changed: false }
+  }
+
+  const current = parsed.basicInfo.website?.trim()
+  if (current === canonical) return { resume: parsed, changed: false }
+
+  return {
+    resume: {
+      ...parsed,
+      basicInfo: {
+        ...parsed.basicInfo,
+        website: canonical,
+      },
+    },
+    changed: true,
+  }
+}
+
 function mergeSkillGroups(stored: SkillGroup[], defaults: SkillGroup[]): SkillGroup[] {
   const categories = new Set(stored.map((group) => group.category))
   const missing = defaults.filter((group) => !categories.has(group.category))
@@ -99,11 +135,16 @@ export function loadResume(): Resume {
       const workExperiences = mergedWorks.changed
         ? mergedWorks.works
         : parsed.workExperiences ?? []
-      const next = { ...parsed, skillGroups, summary, workExperiences }
+      const websiteSync = syncWebsiteFromDefaults(
+        { ...parsed, skillGroups, summary, workExperiences },
+        defaults,
+      )
+      const next = websiteSync.resume
       if (
         skillGroups.length !== (parsed.skillGroups ?? []).length ||
         summary !== parsed.summary ||
-        mergedWorks.changed
+        mergedWorks.changed ||
+        websiteSync.changed
       ) {
         saveResume(next)
         return next
@@ -123,6 +164,7 @@ export function saveResume(resume: Resume): void {
 export function resetResume(): Resume {
   localStorage.removeItem(STORAGE_KEY)
   localStorage.removeItem(RESUME_HEADER_VERSION_KEY)
+  localStorage.removeItem(WEBSITE_SYNC_KEY)
   return defaultResume as Resume
 }
 
