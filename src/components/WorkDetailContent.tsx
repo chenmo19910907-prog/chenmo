@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
 import EditableSection from './EditableSection'
-import platformData from '../data/yaahlan-platform.json'
+import { useYaahlanPlatform } from '../hooks/useYaahlanPlatform'
+import { useAccessMode } from '../context/AccessModeContext'
 import type { WorkDetail, WorkExperience } from '../types/resume'
-import type { YaahlanPlatform } from '../types/profile'
 import {
   linesToList,
   listToLines,
@@ -21,15 +21,17 @@ import { polishWebText } from '../utils/readableResumeText'
 const DEFAULT_PLATFORM_SUMMARY =
   '陌陌阶段核心成果：使用 Cursor 从零搭建业务智能工具平台 Agent，聚合知识库、AI 用例生成、造数验收、抓包回归与测试报告能力，供研发、产品、测试全项目使用。'
 
-const platformInfo = platformData as YaahlanPlatform
-
 function PlatformDemoLinks() {
+  const { isLocal } = useAccessMode()
+  const platformInfo = useYaahlanPlatform()
   const links = platformInfo.demoLinks ?? []
   if (links.length === 0) return null
 
   return (
     <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
-      <p className="text-sm font-medium text-slate-800">在线演示链接</p>
+      <p className="text-sm font-medium text-slate-800">
+        {isLocal ? '本地演示链接' : '在线演示链接'}
+      </p>
       <ul className="mt-3 space-y-3">
         {links.map((link) => (
           <li key={link.url}>

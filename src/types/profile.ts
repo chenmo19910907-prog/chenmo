@@ -34,9 +34,16 @@ export interface PlatformSection {
   bullets?: string[]
 }
 
+export interface PlatformDemoLinkVariant {
+  label: string
+  local: PlatformLink
+  public: PlatformLink
+}
+
 export interface YaahlanPlatform {
   title: string
   summary: string
   demoLinks?: PlatformLink[]
+  demoLinkVariants?: PlatformDemoLinkVariant[]
   sections: PlatformSection[]
 }

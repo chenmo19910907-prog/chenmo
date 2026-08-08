@@ -1,12 +1,10 @@
 import { Link, useLocation } from 'react-router-dom'
 import { RESTORE_SCROLL_STATE } from '../components/ScrollToTop'
-import platformData from '../data/yaahlan-platform.json'
-import type { YaahlanPlatform } from '../types/profile'
-
-const platform = platformData as YaahlanPlatform
+import { useYaahlanPlatform } from '../hooks/useYaahlanPlatform'
 
 export default function PlatformDetailPage() {
   const location = useLocation()
+  const platform = useYaahlanPlatform()
   const fromHome = (location.state as { from?: string } | null)?.from === 'home'
 
   return (
@@ -44,7 +42,7 @@ export default function PlatformDetailPage() {
                 <div className="mt-4 space-y-3">
                   {section.links.map((link) => (
                     <div
-                      key={link.label}
+                      key={`${link.label}-${link.url}`}
                       className="rounded-xl border border-slate-200 p-4 transition hover:border-violet-300 hover:bg-violet-50/50"
                     >
                       {link.url.startsWith('http') ? (

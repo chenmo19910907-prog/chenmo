@@ -1,16 +1,32 @@
 {
   "title": "Yaahlan 业务智能工具平台 Agent",
   "summary": "使用 Cursor 从零搭建的端到端智能测试平台，聚合知识库、AI 用例生成、造数/抓包验收与测试报告能力，供研发/产品/测试全项目使用。",
-  "demoLinks": [
+  "demoLinkVariants": [
     {
       "label": "Web Agent 对话入口",
-      "url": "https://chenmo19910907-prog.github.io/yaahlanAgent/web-agent/",
-      "description": "在线界面演示（新建对话场景）；完整 MOA / Tunnel / 用例生成需内网服务"
+      "local": {
+        "label": "Web Agent 对话入口",
+        "url": "http://127.0.0.1:18766/chat.html",
+        "description": "内网对话工作台，支持 MOA 造数、Tunnel 抓包、用例生成等"
+      },
+      "public": {
+        "label": "Web Agent 对话入口",
+        "url": "https://chenmo19910907-prog.github.io/yaahlanAgent/web-agent/",
+        "description": "在线界面演示（新建对话场景）；完整 MOA / Tunnel / 用例生成需内网服务"
+      }
     },
     {
       "label": "Keynote 产品演示",
-      "url": "https://chenmo19910907-prog.github.io/yaahlanAgent/keynote/",
-      "description": "全屏产品演示：UI 细节、功能亮点、智能工厂与用量数据"
+      "local": {
+        "label": "Keynote 产品演示",
+        "url": "http://127.0.0.1:18766/keynote",
+        "description": "全屏产品演示：UI 细节、功能亮点、智能工厂与用量数据"
+      },
+      "public": {
+        "label": "Keynote 产品演示",
+        "url": "https://chenmo19910907-prog.github.io/yaahlanAgent/keynote/",
+        "description": "全屏产品演示：UI 细节、功能亮点、智能工厂与用量数据"
+      }
     }
   ],
   "sections": [
@@ -34,19 +50,8 @@
     },
     {
       "title": "相关链接",
-      "content": "以下链接可在本机环境或授权网络中访问平台与文档。",
-      "links": [
-        {
-          "label": "Web Agent 对话入口",
-          "url": "https://chenmo19910907-prog.github.io/yaahlanAgent/web-agent/",
-          "description": "在线界面演示；完整能力需内网 Web Agent 服务"
-        },
-        {
-          "label": "Keynote 产品演示",
-          "url": "https://chenmo19910907-prog.github.io/yaahlanAgent/keynote/",
-          "description": "全屏产品演示：UI 细节、功能亮点、智能工厂与用量数据"
-        }
-      ]
+      "content": "以下链接根据访问环境自动切换为本机或 GitHub 在线演示。",
+      "links": []
     }
   ]
 }
