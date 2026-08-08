@@ -35,5 +35,6 @@ export interface PlatformSection {
 export interface YaahlanPlatform {
   title: string
   summary: string
+  demoLinks?: PlatformLink[]
   sections: PlatformSection[]
 }

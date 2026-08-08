@@ -1,18 +1,23 @@
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
+import { RESTORE_SCROLL_STATE } from '../components/ScrollToTop'
 import platformData from '../data/yaahlan-platform.json'
 import type { YaahlanPlatform } from '../types/profile'
 
 const platform = platformData as YaahlanPlatform
 
 export default function PlatformDetailPage() {
+  const location = useLocation()
+  const fromHome = (location.state as { from?: string } | null)?.from === 'home'
+
   return (
     <main className="px-4 py-8">
       <article className="mx-auto max-w-3xl">
         <Link
-          to="/works/work-0"
+          to={fromHome ? '/' : '/works/work-0'}
+          state={fromHome ? RESTORE_SCROLL_STATE : undefined}
           className="mb-6 inline-block text-sm text-blue-600 hover:underline"
         >
-          ← 返回陌陌工作详情
+          {fromHome ? '← 返回个人介绍' : '← 返回陌陌工作详情'}
         </Link>
 
         <header className="rounded-2xl bg-gradient-to-br from-violet-700 to-blue-900 p-8 text-white shadow-lg md:p-10">

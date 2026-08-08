@@ -1,13 +1,12 @@
 import { Link, Outlet, useLocation } from 'react-router-dom'
+import { RESTORE_SCROLL_STATE } from './ScrollToTop'
 import { useAccessMode } from '../context/AccessModeContext'
 
 const publicNav = [{ to: '/', label: '个人介绍' }]
 
 const localNav = [
-  { to: '/resume-maker', label: '简历制作' },
-  { to: '/resumes', label: '已生成简历' },
   { to: '/works', label: '全部经历' },
-  { to: '/assistant', label: '求职助手' },
+  { to: '/resumes', label: '已生成简历' },
   { to: '/edit', label: '编辑简历' },
 ]
 
@@ -22,7 +21,7 @@ export default function Layout() {
       {isLocal && (
         <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/90 backdrop-blur">
           <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 px-4 py-4">
-            <Link to="/" className="group">
+            <Link to="/" state={RESTORE_SCROLL_STATE} className="group">
               <h1 className="text-xl font-bold text-slate-900 group-hover:text-blue-700">
                 陈墨
               </h1>
@@ -40,6 +39,7 @@ export default function Layout() {
                     <Link
                       key={item.to}
                       to={item.to}
+                      state={item.to === '/' ? RESTORE_SCROLL_STATE : undefined}
                       className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
                         active
                           ? 'bg-white text-blue-700 shadow-sm'

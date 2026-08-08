@@ -1,7 +1,9 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
 import LocalOnly from './components/LocalOnly'
+import ScrollToTop from './components/ScrollToTop'
 import { AccessModeProvider } from './context/AccessModeContext'
+import { ProfileProvider } from './context/ProfileContext'
 import { ResumeProvider } from './context/ResumeContext'
 import ApplicationsPage from './pages/ApplicationsPage'
 import EditPage from './pages/EditPage'
@@ -14,14 +16,15 @@ import JobsPage from './pages/JobsPage'
 import PlatformDetailPage from './pages/PlatformDetailPage'
 import PublicResumePage from './pages/PublicResumePage'
 import ResumeMakerPage from './pages/ResumeMakerPage'
-import WorkDetailPage from './pages/WorkDetailPage'
 import WorkListPage from './pages/WorkListPage'
 
 export default function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <AccessModeProvider>
-        <ResumeProvider>
+        <ProfileProvider>
+          <ResumeProvider>
           <Routes>
             {/* 外网可分享的定制简历 */}
             <Route path="/r/:id" element={<PublicResumePage />} />
@@ -29,7 +32,7 @@ export default function App() {
             <Route element={<Layout />}>
               <Route path="/" element={<HomePage />} />
               <Route path="/works" element={<WorkListPage />} />
-              <Route path="/works/:id" element={<WorkDetailPage />} />
+              <Route path="/works/:id" element={<WorkListPage />} />
               <Route path="/works/work-0/platform" element={<PlatformDetailPage />} />
 
               {/* 本机专属 */}
@@ -99,7 +102,8 @@ export default function App() {
               />
             </Route>
           </Routes>
-        </ResumeProvider>
+          </ResumeProvider>
+        </ProfileProvider>
       </AccessModeProvider>
     </BrowserRouter>
   )

@@ -1,7 +1,10 @@
+import type { PersonalProfile } from '../types/profile'
 import type { Resume } from '../types/resume'
+import defaultProfile from '../data/profile.json'
 import defaultResume from '../data/resume.json'
 
 const STORAGE_KEY = 'chenmo-resume'
+const PROFILE_STORAGE_KEY = 'chenmo-profile'
 
 export function loadResume(): Resume {
   try {
@@ -50,4 +53,25 @@ export function importResumeJson(file: File): Promise<Resume> {
     reader.onerror = () => reject(new Error('文件读取失败'))
     reader.readAsText(file)
   })
+}
+
+export function loadProfile(): PersonalProfile {
+  try {
+    const stored = localStorage.getItem(PROFILE_STORAGE_KEY)
+    if (stored) {
+      return JSON.parse(stored) as PersonalProfile
+    }
+  } catch (error) {
+    console.error('读取个人介绍数据失败:', error)
+  }
+  return defaultProfile as PersonalProfile
+}
+
+export function saveProfile(profile: PersonalProfile): void {
+  localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile, null, 2))
+}
+
+export function resetProfile(): PersonalProfile {
+  localStorage.removeItem(PROFILE_STORAGE_KEY)
+  return defaultProfile as PersonalProfile
 }

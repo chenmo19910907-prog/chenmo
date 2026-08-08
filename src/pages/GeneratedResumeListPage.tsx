@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { fetchVariants } from '../utils/jobApi'
+import { deleteVariant, fetchVariants } from '../utils/jobApi'
 import type { ResumeVariant } from '../types/job'
 
 export default function GeneratedResumeListPage() {
   const [variants, setVariants] = useState<ResumeVariant[]>([])
   const [loading, setLoading] = useState(true)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
     void (async () => {
@@ -22,15 +23,27 @@ export default function GeneratedResumeListPage() {
     })()
   }, [])
 
+  const handleDelete = async (variant: ResumeVariant) => {
+    const label = `${variant.company} · ${variant.jobTitle}`
+    if (!window.confirm(`确定删除「${label}」吗？此操作不可恢复。`)) return
+
+    setDeletingId(variant.id)
+    try {
+      await deleteVariant(variant.id)
+      setVariants((current) => current.filter((item) => item.id !== variant.id))
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : '删除失败')
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
   return (
     <main className="px-4 py-8">
       <div className="mx-auto max-w-4xl">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <Link to="/" className="text-sm text-blue-600 hover:underline">
-              ← 返回个人介绍
-            </Link>
-            <h1 className="mt-4 text-2xl font-bold text-slate-900">已生成简历</h1>
+            <h1 className="text-2xl font-bold text-slate-900">已生成简历</h1>
             <p className="mt-2 text-slate-600">根据招聘 JD 生成的定制简历列表（本机可见）</p>
           </div>
           <Link
@@ -104,6 +117,14 @@ export default function GeneratedResumeListPage() {
                         外网预览
                       </a>
                     )}
+                    <button
+                      type="button"
+                      onClick={() => void handleDelete(variant)}
+                      disabled={deletingId === variant.id}
+                      className="rounded-lg border border-rose-200 px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                    >
+                      {deletingId === variant.id ? '删除中…' : '删除'}
+                    </button>
                   </div>
                 </div>
               </article>

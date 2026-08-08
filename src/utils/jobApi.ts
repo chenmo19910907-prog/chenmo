@@ -141,6 +141,17 @@ export function fetchVariantById(id: string): Promise<ResumeVariant> {
   return request(`/variants/${id}`)
 }
 
+export function updateVariant(
+  id: string,
+  patch: Partial<Pick<ResumeVariant, 'resume' | 'company' | 'jobTitle' | 'jdSummary'>>,
+): Promise<ResumeVariant> {
+  return request(`/variants/${id}`, { method: 'PATCH', body: JSON.stringify(patch) })
+}
+
+export function deleteVariant(id: string): Promise<{ ok: boolean }> {
+  return request(`/variants/${id}`, { method: 'DELETE' })
+}
+
 export function fetchPublicVariant(id: string): Promise<ResumeVariant> {
   return request(`/public/variants/${id}`)
 }

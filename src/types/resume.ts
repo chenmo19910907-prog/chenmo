@@ -24,6 +24,7 @@ export interface WorkDetail {
   tools: string[]
   projects: WorkProject[]
   teamInfo?: string
+  platformAgentSummary?: string
 }
 
 export interface WorkExperience {
@@ -36,6 +37,8 @@ export interface WorkExperience {
   highlights: string[]
   featured?: boolean
   detail?: WorkDetail
+  /** 仅用于详情页头部与个人介绍工作卡片的展示标题 */
+  displayCompany?: string
 }
 
 export interface ProjectExperience {

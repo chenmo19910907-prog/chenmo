@@ -325,6 +325,54 @@ app.get('/api/variants/:id', async (req, res) => {
   res.json(variant)
 })
 
+async function deleteVariantScreenshot(variantId) {
+  try {
+    const files = await fs.readdir(SCREENSHOTS_DIR)
+    await Promise.all(
+      files
+        .filter((filename) => filename.startsWith(`${variantId}.`))
+        .map((filename) => fs.unlink(path.join(SCREENSHOTS_DIR, filename))),
+    )
+  } catch {
+    /* 截图目录不存在或已删除时忽略 */
+  }
+}
+
+app.patch('/api/variants/:id', async (req, res) => {
+  const store = await readJson(VARIANTS_PATH, { variants: [] })
+  const index = (store.variants ?? []).findIndex((v) => v.id === req.params.id)
+  if (index === -1) {
+    res.status(404).json({ error: 'variant not found' })
+    return
+  }
+
+  const { resume, company, jobTitle, jdSummary } = req.body ?? {}
+  const current = store.variants[index]
+  store.variants[index] = {
+    ...current,
+    ...(resume !== undefined && { resume }),
+    ...(company !== undefined && { company }),
+    ...(jobTitle !== undefined && { jobTitle }),
+    ...(jdSummary !== undefined && { jdSummary }),
+  }
+
+  await writeJson(VARIANTS_PATH, store)
+  res.json(store.variants[index])
+})
+
+app.delete('/api/variants/:id', async (req, res) => {
+  const store = await readJson(VARIANTS_PATH, { variants: [] })
+  const variants = (store.variants ?? []).filter((v) => v.id !== req.params.id)
+  if (variants.length === (store.variants ?? []).length) {
+    res.status(404).json({ error: 'variant not found' })
+    return
+  }
+
+  await writeJson(VARIANTS_PATH, { variants })
+  await deleteVariantScreenshot(req.params.id)
+  res.json({ ok: true })
+})
+
 app.post('/api/optimize', async (req, res) => {
   const { jobId, resume: clientResume, profile = 'business-expert' } = req.body ?? {}
 
@@ -815,7 +863,7 @@ async function startServer() {
     }
   }
 
-  app.listen(PORT, () => {
+  app.listen(PORT, '0.0.0.0', () => {
     const publicUrl = PUBLIC_SITE_URL || '(set CHENMO_PUBLIC_URL for share links)'
     console.log(`[chenmo] http://localhost:${PORT}`)
     if (IS_PRODUCTION) {

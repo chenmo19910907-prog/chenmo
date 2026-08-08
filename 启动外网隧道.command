@@ -2,12 +2,9 @@
 cd "$(dirname "$0")"
 
 # 确保本机服务在跑
-if ! curl -s -m 2 http://localhost:3456/api/health >/dev/null 2>&1; then
+if ! curl -s -m 2 http://127.0.0.1:3456/api/health >/dev/null 2>&1; then
   echo "启动本机服务..."
-  PATH=".tools/node-v20.18.0-darwin-arm64/bin:.tools/node-v22.12.0-darwin-arm64/bin:$PATH"
-  set -a; source .env 2>/dev/null; set +a
-  NODE_ENV=production CHENMO_API_PORT=3456 nohup node server/index.mjs >> /tmp/chenmo-server.log 2>&1 &
-  sleep 2
+  bash scripts/install-local-service.sh
 fi
 
 pkill -f ".tools/natapp/natapp" 2>/dev/null || true

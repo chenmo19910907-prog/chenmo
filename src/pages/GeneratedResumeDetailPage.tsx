@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import EditableSection from '../components/EditableSection'
 import ResumeView from '../components/ResumeView'
 import { exportToWord } from '../utils/exportDocx'
-import { fetchVariantById } from '../utils/jobApi'
+import { fetchVariantById, updateVariant } from '../utils/jobApi'
 import { getResumePublicUrl } from '../utils/accessMode'
+import { parseVariantMeta, serializeVariantMeta } from '../utils/resumeEditText'
+import type { Resume } from '../types/resume'
 import type { ResumeVariant } from '../types/job'
 
 export default function GeneratedResumeDetailPage() {
@@ -11,6 +14,8 @@ export default function GeneratedResumeDetailPage() {
   const [variant, setVariant] = useState<ResumeVariant | null>(null)
   const [loading, setLoading] = useState(true)
   const [downloading, setDownloading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!id) return
@@ -23,6 +28,43 @@ export default function GeneratedResumeDetailPage() {
       }
     })()
   }, [id])
+
+  const persistVariant = async (
+    patch: Partial<Pick<ResumeVariant, 'resume' | 'company' | 'jobTitle' | 'jdSummary'>>,
+  ) => {
+    if (!id) return
+    setSaving(true)
+    setSaveError(null)
+    try {
+      const updated = await updateVariant(id, patch)
+      setVariant(updated)
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : '保存失败')
+      throw error
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleResumeChange = async (resume: Resume) => {
+    setVariant((current) => (current ? { ...current, resume } : current))
+    await persistVariant({ resume })
+  }
+
+  const handleMetaSave = async (draft: string) => {
+    const meta = parseVariantMeta(draft)
+    setVariant((current) =>
+      current
+        ? {
+            ...current,
+            company: meta.company,
+            jobTitle: meta.jobTitle,
+            jdSummary: meta.jdSummary,
+          }
+        : current,
+    )
+    await persistVariant(meta)
+  }
 
   const handleDownload = async () => {
     if (!variant) return
@@ -63,42 +105,80 @@ export default function GeneratedResumeDetailPage() {
           <Link to="/resumes" className="text-sm text-blue-600 hover:underline">
             ← 已生成简历列表
           </Link>
-          <button
-            type="button"
-            onClick={() => void handleDownload()}
-            disabled={downloading}
-            className="rounded-lg bg-emerald-600 px-5 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-          >
-            {downloading ? '导出中…' : '下载 Word 简历'}
-          </button>
+          <div className="flex items-center gap-3">
+            {saving && <span className="text-sm text-slate-500">保存中…</span>}
+            {saveError && <span className="text-sm text-rose-600">{saveError}</span>}
+            <button
+              type="button"
+              onClick={() => void handleDownload()}
+              disabled={downloading}
+              className="rounded-lg bg-emerald-600 px-5 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+            >
+              {downloading ? '导出中…' : '下载 Word 简历'}
+            </button>
+          </div>
         </div>
 
-        <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
-          <p className="font-medium">
-            {variant.company} · {variant.jobTitle}（匹配度 {variant.matchScore}%）
-          </p>
-          {publicUrl && (
-            <p className="mt-2">
-              外网分享链接：
-              <a
-                href={publicUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ml-1 underline"
-              >
-                {publicUrl}
-              </a>
+        <EditableSection
+          editable
+          title="编辑岗位信息"
+          hint="第一行公司，第二行职位；第三行起为 JD 摘要（可选）。"
+          className="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900"
+          getDraft={() =>
+            serializeVariantMeta({
+              company: variant.company,
+              jobTitle: variant.jobTitle,
+              jdSummary: variant.jdSummary,
+            })
+          }
+          onSave={(draft) => void handleMetaSave(draft)}
+          renderPreview={(draft) => {
+            const meta = parseVariantMeta(draft)
+            return (
+              <div className="text-sm text-blue-900">
+                <p className="font-medium">
+                  {meta.company} · {meta.jobTitle}（匹配度 {variant.matchScore}%）
+                </p>
+                {meta.jdSummary && <p className="mt-2 whitespace-pre-wrap">{meta.jdSummary}</p>}
+              </div>
+            )
+          }}
+        >
+          <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+            <p className="font-medium">
+              {variant.company} · {variant.jobTitle}（匹配度 {variant.matchScore}%）
             </p>
-          )}
-          {variant.profileSiteUrl && (
-            <p className="mt-1">
-              个人主页：{' '}
-              <a href={variant.profileSiteUrl} className="underline" target="_blank" rel="noreferrer">
-                {variant.profileSiteUrl}
-              </a>
-            </p>
-          )}
-        </div>
+            {variant.jdSummary && (
+              <p className="mt-2 whitespace-pre-wrap text-blue-800">{variant.jdSummary}</p>
+            )}
+            {publicUrl && (
+              <p className="mt-2">
+                外网分享链接：
+                <a
+                  href={publicUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-1 underline"
+                >
+                  {publicUrl}
+                </a>
+              </p>
+            )}
+            {variant.profileSiteUrl && (
+              <p className="mt-1">
+                个人主页：{' '}
+                <a
+                  href={variant.profileSiteUrl}
+                  className="underline"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {variant.profileSiteUrl}
+                </a>
+              </p>
+            )}
+          </div>
+        </EditableSection>
 
         {variant.screenshotUrl && (
           <div className="mb-6">
@@ -111,7 +191,11 @@ export default function GeneratedResumeDetailPage() {
           </div>
         )}
 
-        <ResumeView resume={variant.resume} />
+        <ResumeView
+          resume={variant.resume}
+          editable
+          onResumeChange={(resume) => void handleResumeChange(resume)}
+        />
       </div>
     </main>
   )

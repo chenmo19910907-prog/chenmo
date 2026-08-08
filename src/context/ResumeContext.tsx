@@ -5,6 +5,7 @@ import { loadResume, resetResume, saveResume } from '../utils/storage'
 interface ResumeContextValue {
   resume: Resume
   setResume: (resume: Resume) => void
+  updateResume: (updater: (resume: Resume) => Resume) => void
   message: string
   showMessage: (text: string) => void
   handleSave: () => void
@@ -29,6 +30,14 @@ export function ResumeProvider({ children }: { children: React.ReactNode }) {
     showMessage('已保存到浏览器本地')
   }
 
+  const updateResume = useCallback((updater: (current: Resume) => Resume) => {
+    setResume((prev) => {
+      const next = updater(prev)
+      saveResume(next)
+      return next
+    })
+  }, [])
+
   const handleReset = () => {
     if (window.confirm('确定恢复为默认示例数据？当前编辑内容将丢失。')) {
       setResume(resetResume())
@@ -41,6 +50,7 @@ export function ResumeProvider({ children }: { children: React.ReactNode }) {
       value={{
         resume,
         setResume,
+        updateResume,
         message,
         showMessage,
         handleSave,

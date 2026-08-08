@@ -57,11 +57,10 @@ export default function ResumeMakerPage() {
   return (
     <main className="px-4 py-8">
       <div className="mx-auto max-w-3xl">
-        <Link to="/" className="text-sm text-blue-600 hover:underline">
-          ← 返回个人介绍
+        <Link to="/resumes" className="mb-6 inline-block text-sm text-blue-600 hover:underline">
+          ← 已生成简历列表
         </Link>
-
-        <header className="mt-6">
+        <header>
           <h1 className="text-2xl font-bold text-slate-900">简历制作</h1>
           <p className="mt-2 text-slate-600">
             上传公司招聘信息截图并粘贴 JD，系统将根据岗位生成定制简历。生成的简历将附上
