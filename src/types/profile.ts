@@ -38,6 +38,8 @@ export interface PlatformDemoLinkVariant {
   label: string
   local: PlatformLink
   public: PlatformLink
+  /** 仅在本机演示链接中展示，外网/GitHub Pages 不显示 */
+  localOnly?: boolean
 }
 
 export interface YaahlanPlatform {

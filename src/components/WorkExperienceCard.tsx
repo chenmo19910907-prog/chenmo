@@ -88,20 +88,10 @@ export default function WorkExperienceCard({
 
   return (
     <article
-      className={`group relative block overflow-visible rounded-2xl border bg-white p-6 shadow-sm transition hover:border-blue-200 hover:shadow-md ${
+      className={`group relative overflow-visible rounded-2xl border bg-white p-6 pb-14 shadow-sm transition hover:border-blue-200 hover:shadow-md ${
         featured ? 'border-blue-300 ring-2 ring-blue-100 md:col-span-2' : 'border-slate-200'
       }`}
     >
-      <div className="mb-3 flex justify-end">
-        <Link
-          to={`/works/${work.id}`}
-          state={{ from: 'home' }}
-          className="rounded-full bg-blue-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
-        >
-          详情
-        </Link>
-      </div>
-
       <EditableSection
         editable={canEdit}
         title={`编辑 ${displayCompany}`}
@@ -119,6 +109,14 @@ export default function WorkExperienceCard({
           highlights={previewHighlights}
         />
       </EditableSection>
+
+      <Link
+        to={`/works/${work.id}`}
+        state={{ from: 'home' }}
+        className="absolute bottom-6 right-6 rounded-full bg-blue-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+      >
+        详情
+      </Link>
     </article>
   )
 }

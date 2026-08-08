@@ -5,7 +5,9 @@ const platform = platformData as YaahlanPlatform
 
 export function resolvePlatformDemoLinks(useLocal: boolean): PlatformLink[] {
   if (platform.demoLinkVariants?.length) {
-    return platform.demoLinkVariants.map((item) => {
+    return platform.demoLinkVariants
+      .filter((item) => useLocal || !item.localOnly)
+      .map((item) => {
       const picked = useLocal ? item.local : item.public
       return {
         label: item.label,
