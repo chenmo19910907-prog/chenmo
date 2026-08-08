@@ -32,8 +32,11 @@ git push origin master
 ### 2. 在 GitHub 开启 Pages
 
 1. 打开 https://github.com/chenmo19910907-prog/chenmo/settings/pages
-2. **Build and deployment** → Source 选 **GitHub Actions**
-3. 保存后，到 **Actions** 页查看 `Deploy GitHub Pages` 工作流是否成功（约 2–3 分钟）
+2. **Build and deployment** → Source 选 **Deploy from a branch**
+3. **Branch** 选 `gh-pages`，目录选 `/ (root)`，点 Save
+4. 推送代码后，到 **Actions** 看 `Deploy GitHub Pages` 是否成功（首次约 2–3 分钟）
+
+> 若之前选过 **GitHub Actions**，请改回 **Deploy from a branch → gh-pages**。
 
 ### 3. 写入简历个人网站
 
