@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import EditableSection from '../components/EditableSection'
-import ResumeView from '../components/ResumeView'
+import ResumePreviewPanel from '../components/ResumePreviewPanel'
 import { exportToWord } from '../utils/exportDocx'
 import { analyzeVariant, fetchMasterResume, fetchVariantById, refreshVariant, updateVariant } from '../utils/jobApi'
 import { getResumePublicUrl } from '../utils/accessMode'
@@ -9,15 +9,23 @@ import { getVariantScreenshotUrls } from '../utils/variantScreenshots'
 import { shouldSyncWebsite } from '../utils/publicSiteUrl'
 import { applyProfileToResume, applyPublicSiteUrl } from '../utils/resumeSync'
 import { parseVariantMeta, serializeVariantMeta } from '../utils/resumeEditText'
+import { loadResumeTemplateId, saveResumeTemplateId } from '../utils/resumeTemplateStorage'
 import { useAccessMode } from '../context/AccessModeContext'
+import { useModuleEditable } from '../context/EditModeContext'
 import JobAnalysisCard from '../components/JobAnalysisCard'
 import CollapsibleSection from '../components/CollapsibleSection'
 import type { Resume } from '../types/resume'
 import type { ResumeVariant } from '../types/job'
+import {
+  DEFAULT_RESUME_TEMPLATE_ID,
+  resolveResumeTemplateId,
+  type ResumeTemplateId,
+} from '../templates'
 
 export default function GeneratedResumeDetailPage() {
   const { id } = useParams()
   const { publicSiteUrl } = useAccessMode()
+  const moduleEditable = useModuleEditable()
   const [variant, setVariant] = useState<ResumeVariant | null>(null)
   const [loading, setLoading] = useState(true)
   const [downloading, setDownloading] = useState(false)
@@ -25,6 +33,7 @@ export default function GeneratedResumeDetailPage() {
   const [analyzing, setAnalyzing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [templateId, setTemplateId] = useState<ResumeTemplateId>(DEFAULT_RESUME_TEMPLATE_ID)
 
   useEffect(() => {
     if (!id) return
@@ -38,8 +47,15 @@ export default function GeneratedResumeDetailPage() {
     })()
   }, [id])
 
+  useEffect(() => {
+    if (!variant) return
+    setTemplateId(resolveResumeTemplateId(variant.templateId ?? loadResumeTemplateId()))
+  }, [variant?.id, variant?.templateId])
+
   const persistVariant = async (
-    patch: Partial<Pick<ResumeVariant, 'resume' | 'company' | 'jobTitle' | 'jdSummary'>>,
+    patch: Partial<
+      Pick<ResumeVariant, 'resume' | 'company' | 'jobTitle' | 'jdSummary' | 'templateId'>
+    >,
   ) => {
     if (!id) return
     setSaving(true)
@@ -53,6 +69,15 @@ export default function GeneratedResumeDetailPage() {
     } finally {
       setSaving(false)
     }
+  }
+
+  const handleTemplateChange = (nextTemplateId: ResumeTemplateId) => {
+    setTemplateId(nextTemplateId)
+    saveResumeTemplateId(nextTemplateId)
+    if (!id) return
+    void persistVariant({ templateId: nextTemplateId }).catch(() => {
+      /* saveError 已在 persistVariant 内处理 */
+    })
   }
 
   useEffect(() => {
@@ -93,7 +118,10 @@ export default function GeneratedResumeDetailPage() {
     setDownloading(true)
     try {
       const suffix = variant.company ? `-${variant.company}` : ''
-      await exportToWord(variant.resume, `${variant.resume.basicInfo.name}${suffix}-定制简历.docx`)
+      await exportToWord(variant.resume, {
+        filename: `${variant.resume.basicInfo.name}${suffix}-定制简历.docx`,
+        templateId,
+      })
     } finally {
       setDownloading(false)
     }
@@ -160,7 +188,7 @@ export default function GeneratedResumeDetailPage() {
   const screenshotUrls = getVariantScreenshotUrls(variant)
 
   return (
-    <main className="px-4 py-8">
+    <main className={`px-4 py-8 ${moduleEditable ? 'overflow-x-visible pr-14' : ''}`}>
       <div className="mx-auto max-w-3xl">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <Link to="/resumes" className="text-sm text-blue-600 hover:underline">
@@ -194,7 +222,7 @@ export default function GeneratedResumeDetailPage() {
           defaultOpen={false}
         >
           <EditableSection
-            editable
+            editable={moduleEditable}
             title="编辑岗位信息"
             hint="第一行公司，第二行职位；第三行起为 JD 摘要（可选）。"
             className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900"
@@ -294,9 +322,11 @@ export default function GeneratedResumeDetailPage() {
           </CollapsibleSection>
         )}
 
-        <ResumeView
+        <ResumePreviewPanel
           resume={variant.resume}
-          editable
+          templateId={templateId}
+          onTemplateChange={handleTemplateChange}
+          editable={moduleEditable}
           onResumeChange={(resume) => void handleResumeChange(resume)}
         />
       </div>

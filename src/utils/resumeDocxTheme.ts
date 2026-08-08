@@ -49,6 +49,7 @@ export function resumeRun({
   text,
   size = RESUME_SIZE.body,
   bold = false,
+  italics = false,
   color = RESUME_COLOR.body,
   underline,
   characterSpacing = BODY_CHARACTER_SPACING,
@@ -56,6 +57,7 @@ export function resumeRun({
   text: string
   size?: number
   bold?: boolean
+  italics?: boolean
   color?: string
   underline?: Record<string, never>
   characterSpacing?: number
@@ -64,6 +66,7 @@ export function resumeRun({
     text,
     size,
     bold,
+    italics,
     color,
     underline,
     font: RESUME_FONT,

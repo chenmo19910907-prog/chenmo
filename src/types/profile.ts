@@ -10,6 +10,12 @@ export interface ProfileHighlight {
   description: string
 }
 
+export interface LifePhoto {
+  src: string
+  alt: string
+  caption?: string
+}
+
 export interface PersonalProfile {
   name: string
   title: string
@@ -17,6 +23,9 @@ export interface PersonalProfile {
   about: string[]
   hobbies: string[]
   lifeAbout?: string
+  lifePhotos?: LifePhoto[]
+  /** 简历默认头像（public 相对路径或完整 URL） */
+  avatarUrl?: string
   highlights: ProfileHighlight[]
   contact: ProfileContact
 }

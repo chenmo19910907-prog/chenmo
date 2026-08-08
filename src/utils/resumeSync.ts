@@ -3,6 +3,7 @@ import type { Resume } from '../types/resume'
 import { buildSummaryFromAbout, normalizeDisplayTitle } from './resumeGenerationStandards'
 import { shouldSyncWebsite } from './publicSiteUrl'
 import { loadProfile } from './storage'
+import { resolveProfileAvatarUrl } from './resumeAvatar'
 
 /** 将个人介绍页的最新信息合并进主简历（遵循简历生成规范） */
 export function applyProfileToResume(
@@ -21,6 +22,7 @@ export function applyProfileToResume(
       email: profile.contact.email ?? resume.basicInfo.email,
       location: profile.contact.location ?? resume.basicInfo.location,
       degree: profile.contact.degree ?? resume.basicInfo.degree,
+      avatarUrl: resume.basicInfo.avatarUrl?.trim() || resolveProfileAvatarUrl(profile),
     },
     summary: aboutText || resume.summary,
   }

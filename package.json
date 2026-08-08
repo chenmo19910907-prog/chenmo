@@ -13,6 +13,7 @@
     "start": "NODE_ENV=production node server/index.mjs",
     "deploy:aliyun": "bash scripts/deploy-aliyun.sh",
     "sync:vps": "bash scripts/sync-to-vps.sh",
+    "sync:momo-work": "node scripts/sync-momo-work-from-kb.mjs",
     "lint": "oxlint",
     "preview": "vite preview"
   },

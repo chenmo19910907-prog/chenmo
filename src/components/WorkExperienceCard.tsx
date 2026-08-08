@@ -95,6 +95,7 @@ export default function WorkExperienceCard({
       <EditableSection
         editable={canEdit}
         title={`编辑 ${displayCompany}`}
+        bleed={6}
         getDraft={getDraft}
         onSave={applyDraft}
         hint="依次为时间、公司、职位；空行后为卡片概述（可多段）"

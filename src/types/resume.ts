@@ -7,6 +7,10 @@ export interface BasicInfo {
   degree?: string
   website?: string
   github?: string
+  /** 是否在简历页眉展示个人头像 */
+  showAvatar?: boolean
+  /** 头像路径（public 相对路径或完整 URL） */
+  avatarUrl?: string
 }
 
 export interface WorkProject {

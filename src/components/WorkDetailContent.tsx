@@ -187,12 +187,13 @@ export default function WorkDetailContent({
 
   return (
     <>
-      <EditableSection
-        editable={canEdit}
-        title="编辑工作概要"
-        className="rounded-2xl bg-gradient-to-br from-blue-700 to-blue-900 p-8 text-white shadow-lg md:p-10"
-        hint="第一块三行：时间、公司、职位；后续块依次为标语、团队信息"
-        getDraft={() =>
+      <section className="overflow-visible rounded-2xl bg-gradient-to-br from-blue-700 to-blue-900 p-8 text-white shadow-lg md:p-10">
+        <EditableSection
+          editable={canEdit}
+          title="编辑工作概要"
+          bleed={8}
+          hint="第一块三行：时间、公司、职位；后续块依次为标语、团队信息"
+          getDraft={() =>
           serializeWorkHeader({
             startDate: work.startDate,
             endDate: work.endDate,
@@ -241,9 +242,10 @@ export default function WorkDetailContent({
           tagline={detail?.tagline}
           teamInfo={detail?.teamInfo}
         />
-      </EditableSection>
+        </EditableSection>
+      </section>
 
-      <div className="mt-8 rounded-2xl bg-white p-8 shadow-lg md:p-10">
+      <div className="mt-8 overflow-visible rounded-2xl bg-white p-8 shadow-lg md:p-10">
         {detail ? (
           <>
             <section className="mb-10">
@@ -251,6 +253,7 @@ export default function WorkDetailContent({
               <EditableSection
                 editable={canEdit}
                 title="编辑业务背景"
+                bleed={8}
                 hint="概述与要点列表用 --- 分隔；要点每行一条"
                 getDraft={() =>
                   serializeOverviewWithPoints(detail.businessOverview, detail.businessPoints)
@@ -285,6 +288,7 @@ export default function WorkDetailContent({
               <EditableSection
                 editable={canEdit}
                 title="编辑工作职责"
+                bleed={8}
                 hint="每行一条职责"
                 getDraft={() => listToLines(detail.responsibilities)}
                 onSave={(draft) =>
@@ -307,6 +311,7 @@ export default function WorkDetailContent({
                 <EditableSection
                   editable={canEdit}
                   title="编辑代表项目"
+                  bleed={8}
                   hint="每个项目以 ## 标题 开头；描述下方用 - 开头写亮点"
                   getDraft={() => serializeProjects(detail.projects)}
                   onSave={(draft) =>
@@ -329,6 +334,7 @@ export default function WorkDetailContent({
               <EditableSection
                 editable={canEdit}
                 title="编辑工作成果"
+                bleed={8}
                 hint="每行一条成果"
                 getDraft={() => listToLines(detail.achievements)}
                 onSave={(draft) =>
@@ -351,6 +357,7 @@ export default function WorkDetailContent({
                 <EditableSection
                   editable={canEdit}
                   title="编辑平台介绍"
+                  bleed={8}
                   hint="平台介绍段落"
                   getDraft={() => platformSummary}
                   onSave={(draft) =>
@@ -376,6 +383,7 @@ export default function WorkDetailContent({
               <EditableSection
                 editable={canEdit}
                 title="编辑工作概述"
+                bleed={8}
                 getDraft={() => work.description}
                 onSave={(draft) =>
                   updateWork((current) => ({ ...current, description: draft.trim() }))
@@ -394,6 +402,7 @@ export default function WorkDetailContent({
                 <EditableSection
                   editable={canEdit}
                   title="编辑工作亮点"
+                  bleed={8}
                   hint="每行一条亮点"
                   getDraft={() => listToLines(work.highlights)}
                   onSave={(draft) =>

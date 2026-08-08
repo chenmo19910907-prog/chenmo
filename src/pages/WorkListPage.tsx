@@ -1,7 +1,7 @@
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import WorkDetailContent from '../components/WorkDetailContent'
 import { RESTORE_SCROLL_STATE } from '../components/ScrollToTop'
-import { useAccessMode } from '../context/AccessModeContext'
+import { useModuleEditable } from '../context/EditModeContext'
 import { useResume } from '../context/ResumeContext'
 import { replaceWork } from '../utils/workExperience'
 import { getWorkDisplayCompany } from '../utils/workDisplay'
@@ -11,7 +11,7 @@ export default function WorkListPage() {
   const location = useLocation()
   const navigate = useNavigate()
   const { resume, updateResume } = useResume()
-  const { isLocal } = useAccessMode()
+  const moduleEditable = useModuleEditable()
   const works = resume.workExperiences
   const fromHome = (location.state as { from?: string } | null)?.from === 'home'
 
@@ -38,7 +38,7 @@ export default function WorkListPage() {
 
   if (fromHome && activeWork) {
     return (
-      <main className={`px-4 py-8 ${isLocal ? 'overflow-x-visible pr-14' : ''}`}>
+      <main className={`px-4 py-8 ${moduleEditable ? 'overflow-x-visible pr-14' : ''}`}>
         <div className="mx-auto max-w-5xl overflow-visible">
           <Link
             to="/"
@@ -52,7 +52,7 @@ export default function WorkListPage() {
             <WorkDetailContent
               work={activeWork}
               fromHome
-              editable={isLocal}
+              editable={moduleEditable}
               onWorkChange={(nextWork) =>
                 updateResume((current) => replaceWork(current, nextWork))
               }
@@ -64,7 +64,7 @@ export default function WorkListPage() {
   }
 
   return (
-    <main className={`px-4 py-8 ${isLocal ? 'overflow-x-visible pr-14' : ''}`}>
+    <main className={`px-4 py-8 ${moduleEditable ? 'overflow-x-visible pr-14' : ''}`}>
       <div className="mx-auto max-w-5xl overflow-visible">
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-slate-900">全部经历</h2>
@@ -98,7 +98,7 @@ export default function WorkListPage() {
           <article>
             <WorkDetailContent
               work={activeWork}
-              editable={isLocal}
+              editable={moduleEditable}
               onWorkChange={(nextWork) =>
                 updateResume((current) => replaceWork(current, nextWork))
               }

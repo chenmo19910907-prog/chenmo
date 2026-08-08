@@ -1,6 +1,7 @@
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { RESTORE_SCROLL_STATE } from './ScrollToTop'
 import { useAccessMode } from '../context/AccessModeContext'
+import { EditModeProvider, useEditMode } from '../context/EditModeContext'
 import { getPublicPreviewUrl } from '../utils/accessMode'
 
 const publicNav = [{ to: '/', label: '个人介绍' }]
@@ -12,8 +13,17 @@ const localNav = [
 ]
 
 export default function Layout() {
+  return (
+    <EditModeProvider>
+      <LayoutShell />
+    </EditModeProvider>
+  )
+}
+
+function LayoutShell() {
   const location = useLocation()
   const { isLocal, loading } = useAccessMode()
+  const { canEdit, isEditing, toggleEditing } = useEditMode()
 
   const navItems = isLocal ? [...publicNav, ...localNav] : publicNav
 
@@ -31,6 +41,19 @@ export default function Layout() {
 
             {!loading && (
               <div className="flex flex-wrap items-center gap-3">
+                {canEdit && (
+                  <button
+                    type="button"
+                    onClick={toggleEditing}
+                    className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
+                      isEditing
+                        ? 'border border-blue-600 bg-blue-600 text-white hover:bg-blue-700'
+                        : 'border border-slate-300 bg-white text-slate-700 hover:border-blue-300 hover:text-blue-700'
+                    }`}
+                  >
+                    {isEditing ? '完成编辑' : '编辑'}
+                  </button>
+                )}
                 <a
                   href={getPublicPreviewUrl('/')}
                   target="_blank"

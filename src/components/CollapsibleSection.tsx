@@ -18,7 +18,7 @@ export default function CollapsibleSection({
   const [open, setOpen] = useState(defaultOpen)
 
   return (
-    <section className={`mb-6 overflow-hidden rounded-xl border border-slate-200 bg-white ${className}`}>
+    <section className={`mb-6 overflow-visible rounded-xl border border-slate-200 bg-white ${className}`}>
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
@@ -31,7 +31,7 @@ export default function CollapsibleSection({
         </div>
         <span className="shrink-0 text-xs text-slate-400">{open ? '收起 ▲' : '展开 ▼'}</span>
       </button>
-      {open && <div className="border-t border-slate-100 px-4 py-4">{children}</div>}
+      {open && <div className="overflow-visible border-t border-slate-100 px-4 py-4">{children}</div>}
     </section>
   )
 }

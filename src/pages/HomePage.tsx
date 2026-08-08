@@ -1,14 +1,16 @@
 import EditableSection from '../components/EditableSection'
-import { useAccessMode } from '../context/AccessModeContext'
+import { useEditMode, useModuleEditable } from '../context/EditModeContext'
 import { useProfile } from '../context/ProfileContext'
 import { useResume } from '../context/ResumeContext'
 import WorkExperienceCard from '../components/WorkExperienceCard'
 import type { SkillGroup } from '../types/resume'
 import {
   parseHero,
+  parseHighlights,
   parseLifeSection,
   paragraphsToText,
   serializeHero,
+  serializeHighlights,
   serializeLifeSection,
   textToParagraphs,
 } from '../utils/sectionText'
@@ -18,7 +20,8 @@ import {
 } from '../utils/resumeEditText'
 import { replaceWork } from '../utils/workExperience'
 import { polishWebText } from '../utils/readableResumeText'
-import type { ProfileHighlight } from '../types/profile'
+import { staticAssetUrl } from '../utils/staticAssetUrl'
+import type { LifePhoto, ProfileHighlight } from '../types/profile'
 
 function HeroPreview({
   name,
@@ -104,12 +107,41 @@ function SkillGroupsPreview({ groups }: { groups: SkillGroup[] }) {
   )
 }
 
+function LifePhotoGallery({ photos }: { photos: LifePhoto[] }) {
+  if (photos.length === 0) return null
+
+  return (
+    <div className="grid grid-cols-3 gap-2 sm:gap-3">
+      {photos.map((photo) => (
+        <figure
+          key={photo.src}
+          className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm"
+        >
+          <img
+            src={staticAssetUrl(photo.src)}
+            alt={photo.alt}
+            loading="lazy"
+            className="aspect-[3/4] w-full object-cover"
+          />
+          {photo.caption && (
+            <figcaption className="border-t border-slate-100 px-1.5 py-1.5 text-center text-[10px] leading-snug text-slate-500 sm:px-2 sm:py-2 sm:text-xs">
+              {photo.caption}
+            </figcaption>
+          )}
+        </figure>
+      ))}
+    </div>
+  )
+}
+
 function LifeSectionPreview({
   hobbies,
   lifeAbout,
+  lifePhotos,
 }: {
   hobbies: string[]
   lifeAbout: string
+  lifePhotos: LifePhoto[]
 }) {
   return (
     <div className="space-y-4">
@@ -126,6 +158,7 @@ function LifeSectionPreview({
         </div>
       )}
       {lifeAbout && <p className="leading-relaxed text-slate-600">{polishWebText(lifeAbout)}</p>}
+      <LifePhotoGallery photos={lifePhotos} />
     </div>
   )
 }
@@ -138,7 +171,8 @@ const SECTION_HEADING_INSET = 'pl-3 md:pl-4 text-2xl font-bold text-slate-900'
 export default function HomePage() {
   const { profile, updateProfile } = useProfile()
   const { resume, updateResume } = useResume()
-  const { isLocal } = useAccessMode()
+  const { canEdit } = useEditMode()
+  const moduleEditable = useModuleEditable()
 
   const works = resume.workExperiences
   const webSkillGroups = resume.skillGroups.filter(
@@ -147,47 +181,52 @@ export default function HomePage() {
 
   const heroDraft = () => serializeHero(profile)
   const aboutDraft = () => paragraphsToText(profile.about)
+  const highlightsDraft = () => serializeHighlights(profile.highlights)
   const skillsDraft = () => serializeResumeSkillGroups(resume.skillGroups)
   const lifeDraft = () =>
     serializeLifeSection({
       hobbies: profile.hobbies ?? [],
       lifeAbout: profile.lifeAbout,
     })
+  const lifePhotos = profile.lifePhotos ?? []
 
   return (
-    <main className={`px-4 py-8 ${isLocal ? 'overflow-x-visible pr-14' : ''}`}>
+    <main className={`px-4 py-8 ${moduleEditable ? 'overflow-x-visible pr-14' : ''}`}>
       <div className="mx-auto max-w-5xl space-y-10 overflow-visible">
-        <EditableSection
-          editable={isLocal}
-          title="编辑个人介绍"
-          className="rounded-2xl bg-gradient-to-br from-slate-900 to-blue-900 p-8 text-white shadow-xl md:p-12"
-          hint="前三行依次为姓名、职位、标语；空行后每行一条联系方式（电话：、邮箱：…）"
-          getDraft={heroDraft}
-          onSave={(draft) => {
-            const parsed = parseHero(draft)
-            updateProfile((current) => ({
-              ...current,
-              name: parsed.name,
-              title: parsed.title,
-              tagline: parsed.tagline,
-              contact: { ...current.contact, ...parsed.contact },
-            }))
-          }}
-          renderPreview={(draft) => <HeroPreview {...parseHero(draft)} />}
-        >
-          <HeroPreview
-            name={profile.name}
-            title={profile.title}
-            tagline={profile.tagline}
-            contact={profile.contact}
-          />
-        </EditableSection>
+        <section className="overflow-visible rounded-2xl bg-gradient-to-br from-slate-900 to-blue-900 p-8 text-white shadow-xl md:p-12">
+          <EditableSection
+            editable={moduleEditable}
+            title="编辑个人介绍"
+            bleed={8}
+            hint="前三行依次为姓名、职位、标语；空行后每行一条联系方式（电话：、邮箱：…）"
+            getDraft={heroDraft}
+            onSave={(draft) => {
+              const parsed = parseHero(draft)
+              updateProfile((current) => ({
+                ...current,
+                name: parsed.name,
+                title: parsed.title,
+                tagline: parsed.tagline,
+                contact: { ...current.contact, ...parsed.contact },
+              }))
+            }}
+            renderPreview={(draft) => <HeroPreview {...parseHero(draft)} />}
+          >
+            <HeroPreview
+              name={profile.name}
+              title={profile.title}
+              tagline={profile.tagline}
+              contact={profile.contact}
+            />
+          </EditableSection>
+        </section>
 
-        <section className="rounded-2xl bg-white p-8 shadow-lg">
+        <section className="overflow-visible rounded-2xl bg-white p-8 shadow-lg">
           <h2 className={SECTION_HEADING}>关于我</h2>
           <EditableSection
-            editable={isLocal}
+            editable={moduleEditable}
             title="编辑关于我"
+            bleed={8}
             className="mt-4"
             hint="每行一条要点，空行分段；建议涵盖平台能力、履历与核心业绩"
             getDraft={aboutDraft}
@@ -213,10 +252,26 @@ export default function HomePage() {
           </EditableSection>
         </section>
 
-        {profile.highlights.length > 0 && (
+        {(canEdit || profile.highlights.length > 0) && (
           <section>
             <h2 className={`mb-6 ${SECTION_HEADING_INSET}`}>核心能力</h2>
-            <ProfileHighlights items={profile.highlights} />
+            <EditableSection
+              editable={moduleEditable}
+              title="编辑核心能力"
+              hint="每项第一行写标题，后续行写描述；多项之间用 --- 分隔"
+              getDraft={highlightsDraft}
+              onSave={(draft) =>
+                updateProfile((current) => ({
+                  ...current,
+                  highlights: parseHighlights(draft),
+                }))
+              }
+              renderPreview={(draft) => (
+                <ProfileHighlights items={parseHighlights(draft)} />
+              )}
+            >
+              <ProfileHighlights items={profile.highlights} />
+            </EditableSection>
           </section>
         )}
 
@@ -228,7 +283,7 @@ export default function HomePage() {
                 key={work.id}
                 work={work}
                 featured={index === 0}
-                editable={isLocal}
+                editable={moduleEditable}
                 onWorkChange={(nextWork) =>
                   updateResume((current) => replaceWork(current, nextWork))
                 }
@@ -241,7 +296,7 @@ export default function HomePage() {
           <section>
             <h2 className={`mb-6 ${SECTION_HEADING_INSET}`}>专业技能</h2>
             <EditableSection
-              editable={isLocal}
+              editable={moduleEditable}
               title="编辑专业技能"
               hint="每组第一行分类名，第二行技能项用顿号分隔；多组之间用 --- 分隔。"
               getDraft={skillsDraft}
@@ -264,11 +319,12 @@ export default function HomePage() {
           </section>
         )}
 
-        <section className="rounded-2xl bg-white p-8 shadow-lg">
+        <section className="overflow-visible rounded-2xl bg-white p-8 shadow-lg">
           <h2 className={SECTION_HEADING}>生活与兴趣</h2>
           <EditableSection
-            editable={isLocal}
+            editable={moduleEditable}
             title="编辑生活与兴趣"
+            bleed={8}
             className="mt-4"
             hint="第一行写爱好：摄影、游戏（逗号分隔）；空行后可写一段生活描述"
             getDraft={lifeDraft}
@@ -280,11 +336,14 @@ export default function HomePage() {
                 lifeAbout: parsed.lifeAbout,
               }))
             }}
-            renderPreview={(draft) => <LifeSectionPreview {...parseLifeSection(draft)} />}
+            renderPreview={(draft) => (
+              <LifeSectionPreview {...parseLifeSection(draft)} lifePhotos={lifePhotos} />
+            )}
           >
             <LifeSectionPreview
               hobbies={profile.hobbies ?? []}
               lifeAbout={profile.lifeAbout ?? ''}
+              lifePhotos={lifePhotos}
             />
           </EditableSection>
         </section>

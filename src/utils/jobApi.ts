@@ -173,7 +173,9 @@ export function analyzeVariant(id: string): Promise<ResumeVariant> {
 
 export function updateVariant(
   id: string,
-  patch: Partial<Pick<ResumeVariant, 'resume' | 'company' | 'jobTitle' | 'jdSummary'>>,
+  patch: Partial<
+    Pick<ResumeVariant, 'resume' | 'company' | 'jobTitle' | 'jdSummary' | 'templateId'>
+  >,
 ): Promise<ResumeVariant> {
   return request(`/variants/${id}`, { method: 'PATCH', body: JSON.stringify(patch) })
 }

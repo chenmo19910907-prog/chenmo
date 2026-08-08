@@ -1,3 +1,5 @@
+import type { ResumeTemplateId } from '../templates'
+
 export interface JobMonitorConfig {
   refreshIntervalHours: number
   enabled: boolean
@@ -228,6 +230,8 @@ export interface ResumeVariant {
   profileSiteUrl?: string
   /** 公司与岗位自动分析结果 */
   jobAnalysis?: JobAnalysis
+  /** 简历预览与 Word 导出模版 */
+  templateId?: ResumeTemplateId
 }
 
 export interface VariantStore {

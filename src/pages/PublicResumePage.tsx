@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import ResumeView from '../components/ResumeView'
 import { fetchPublicVariant } from '../utils/jobApi'
+import { resolveResumeTemplateId } from '../templates'
 import type { ResumeVariant } from '../types/job'
 
 /** 外网可访问的定制简历页（/r/:id），不含简历制作等本机功能 */
@@ -70,7 +71,10 @@ export default function PublicResumePage() {
               </p>
             )}
           </div>
-          <ResumeView resume={variant.resume} />
+          <ResumeView
+            resume={variant.resume}
+            templateId={resolveResumeTemplateId(variant.templateId)}
+          />
         </div>
       </main>
     </div>

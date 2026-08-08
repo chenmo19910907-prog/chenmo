@@ -1,4 +1,4 @@
-import type { PersonalProfile } from '../types/profile'
+import type { LifePhoto, PersonalProfile } from '../types/profile'
 import type { Resume, SkillGroup, WorkExperience } from '../types/resume'
 import defaultProfile from '../data/profile.json'
 import defaultResume from '../data/resume.json'
@@ -8,7 +8,7 @@ const STORAGE_KEY = 'chenmo-resume'
 const PROFILE_STORAGE_KEY = 'chenmo-profile'
 
 /** 内置「关于我」更新时递增，用于将浏览器缓存同步到最新默认文案 */
-const PROFILE_CONTENT_VERSION = 7
+const PROFILE_CONTENT_VERSION = 8
 
 function isStaleAbout(about: string[] | undefined): boolean {
   if (!about?.length) return true
@@ -33,7 +33,7 @@ function isStaleSummary(summary: string | undefined): boolean {
 }
 
 /** 工作经历详情页头部文案更新时递增，用于将浏览器缓存同步到最新默认文案 */
-const RESUME_WORK_HEADER_VERSION = 2
+const RESUME_WORK_HEADER_VERSION = 3
 const RESUME_HEADER_VERSION_KEY = 'chenmo-resume-header-version'
 
 /** 个人网站地址更新时递增，用于将浏览器缓存中的旧穿透地址同步为 GitHub Pages */
@@ -202,6 +202,20 @@ export function importResumeJson(file: File): Promise<Resume> {
   })
 }
 
+function mergeLifePhotos(
+  stored: LifePhoto[] | undefined,
+  defaults: LifePhoto[],
+): { photos: LifePhoto[]; changed: boolean } {
+  if (!defaults.length) return { photos: stored ?? [], changed: false }
+  if (!stored?.length) return { photos: defaults, changed: true }
+
+  const known = new Set(stored.map((photo) => photo.src))
+  const missing = defaults.filter((photo) => !known.has(photo.src))
+  if (missing.length === 0) return { photos: stored, changed: false }
+
+  return { photos: [...stored, ...missing], changed: true }
+}
+
 export function loadProfile(): PersonalProfile {
   const defaults = defaultProfile as PersonalProfile
   try {
@@ -212,16 +226,21 @@ export function loadProfile(): PersonalProfile {
       }
       const staleProfile =
         parsed.contentVersion !== PROFILE_CONTENT_VERSION || isStaleAbout(parsed.about)
+      const mergedLifePhotos = mergeLifePhotos(parsed.lifePhotos, defaults.lifePhotos ?? [])
       const next: PersonalProfile & { contentVersion?: number } = {
         ...parsed,
         hobbies: parsed.hobbies ?? defaults.hobbies ?? [],
         lifeAbout: parsed.lifeAbout ?? defaults.lifeAbout ?? '',
+        lifePhotos:
+          staleProfile || !parsed.lifePhotos?.length
+            ? (defaults.lifePhotos ?? [])
+            : mergedLifePhotos.photos,
         tagline: staleProfile ? defaults.tagline : parsed.tagline,
         about: staleProfile ? defaults.about : parsed.about,
         highlights: staleProfile ? defaults.highlights : parsed.highlights,
         contentVersion: PROFILE_CONTENT_VERSION,
       }
-      if (staleProfile) {
+      if (staleProfile || mergedLifePhotos.changed) {
         saveProfile(next)
       }
       return next

@@ -1,6 +1,21 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 
+/** 与页面 main / ResumePreviewPanel 的 pr-14 对齐，按钮落在模块外侧 gutter */
+const EDIT_BUTTON_RAIL = '-right-14 left-auto'
+const EDIT_BUTTON_ADJACENT = 'left-full ml-3 right-auto'
+
+const EDIT_BUTTON_BASE =
+  'absolute top-0 z-10 whitespace-nowrap rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-600 shadow-sm transition hover:border-blue-300 hover:text-blue-700'
+
+const BLEED_CLASS: Record<number, string> = {
+  4: '-mx-4 px-4',
+  6: '-mx-6 px-6',
+  8: '-mx-8 px-8',
+  10: '-mx-10 px-10',
+  12: '-mx-12 px-12',
+}
+
 interface EditableSectionProps {
   editable?: boolean
   getDraft: () => string
@@ -8,6 +23,10 @@ interface EditableSectionProps {
   renderPreview: (draft: string) => React.ReactNode
   children: React.ReactNode
   className?: string
+  /** 向外扩展至父级 padding 边缘，使按钮锚定在模块外缘（如父级 p-8 传 8） */
+  bleed?: number
+  /** rail：固定到模块右侧 pr-14 gutter（默认）；adjacent：紧贴内容右缘 */
+  buttonPlacement?: 'rail' | 'adjacent'
   editButtonClassName?: string
   hint?: string
   title?: string
@@ -20,6 +39,8 @@ export default function EditableSection({
   renderPreview,
   children,
   className = '',
+  bleed,
+  buttonPlacement = 'rail',
   editButtonClassName = '',
   hint,
   title = '编辑内容',
@@ -71,15 +92,17 @@ export default function EditableSection({
     setEditing(false)
   }
 
+  const bleedClass = bleed ? (BLEED_CLASS[bleed] ?? '') : ''
+  const buttonPosClass = buttonPlacement === 'rail' ? EDIT_BUTTON_RAIL : EDIT_BUTTON_ADJACENT
+
   return (
     <>
-      <div className="relative overflow-visible">
+      <div className={`relative w-full overflow-visible ${bleedClass}`}>
         <div className={className}>{children}</div>
         <button
           type="button"
           onClick={startEdit}
-          className={`absolute top-0 z-10 ml-3 whitespace-nowrap rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-600 shadow-sm transition hover:border-blue-300 hover:text-blue-700 ${editButtonClassName}`}
-          style={{ left: '100%' }}
+          className={`${EDIT_BUTTON_BASE} ${buttonPosClass} ${editButtonClassName}`}
         >
           编辑
         </button>

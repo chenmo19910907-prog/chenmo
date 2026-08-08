@@ -2,6 +2,7 @@ import type {
   BasicInfo,
   Education,
   ProjectExperience,
+  Resume,
   SkillGroup,
   WorkExperience,
 } from '../types/resume'
@@ -18,6 +19,7 @@ export function serializeResumeBasicInfo(basicInfo: BasicInfo): string {
     { label: '地点', value: basicInfo.location },
     { label: '学历', value: basicInfo.degree ?? '' },
     { label: '网站', value: basicInfo.website ?? '' },
+    { label: '头像', value: basicInfo.avatarUrl ?? '' },
   ]
   return [head, serializeLabeledLines(labels)].join('\n\n')
 }
@@ -39,6 +41,7 @@ export function parseResumeBasicInfo(text: string, prev: BasicInfo): BasicInfo {
     location: labeled['地点'] ?? prev.location,
     degree: labeled['学历'] || undefined,
     website: labeled['网站'] || undefined,
+    avatarUrl: labeled['头像'] || prev.avatarUrl,
   }
 }
 
@@ -180,6 +183,51 @@ export function parseResumeEducations(text: string, prev: Education[]): Educatio
 /** 简历展示/导出用：过滤掉行首带 * 隐藏的学历 */
 export function visibleEducations(educations: Education[]): Education[] {
   return educations.filter((edu) => !edu.deemphasized)
+}
+
+export function getPrimaryEducation(resume: Resume): Education | undefined {
+  return visibleEducations(resume.educations)[0]
+}
+
+/** 学历区块展示：学校 · 专业 · 学历 */
+export function formatEducationLine(
+  edu: Pick<Education, 'school' | 'major' | 'degree'>,
+): string {
+  return [edu.school, edu.major, edu.degree]
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join(' · ')
+}
+
+/** 页眉联系方式：学历与学历区块首条记录保持一致 */
+export function getResumeContactItems(
+  resume: Resume,
+): { label: string; value: string }[] {
+  const primaryEducation = getPrimaryEducation(resume)
+  return [
+    { label: '电话', value: resume.basicInfo.phone },
+    { label: '邮箱', value: resume.basicInfo.email },
+    { label: '地点', value: resume.basicInfo.location },
+    {
+      label: '学历',
+      value: primaryEducation?.degree || resume.basicInfo.degree || '',
+    },
+  ].filter((item): item is { label: string; value: string } => Boolean(item.value))
+}
+
+export function mergeEducationsPatch(
+  resume: Resume,
+  educations: Education[],
+): Pick<Resume, 'educations' | 'basicInfo'> {
+  const primaryEducation = visibleEducations(educations)[0]
+  const degree = primaryEducation?.degree?.trim()
+
+  return {
+    educations,
+    basicInfo: degree
+      ? { ...resume.basicInfo, degree }
+      : resume.basicInfo,
+  }
 }
 
 export function serializeResumeSkillGroups(groups: SkillGroup[]): string {

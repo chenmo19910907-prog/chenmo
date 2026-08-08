@@ -376,7 +376,7 @@ app.patch('/api/variants/:id', async (req, res) => {
     return
   }
 
-  const { resume, company, jobTitle, jdSummary } = req.body ?? {}
+  const { resume, company, jobTitle, jdSummary, templateId } = req.body ?? {}
   const current = store.variants[index]
   store.variants[index] = {
     ...current,
@@ -384,6 +384,7 @@ app.patch('/api/variants/:id', async (req, res) => {
     ...(company !== undefined && { company }),
     ...(jobTitle !== undefined && { jobTitle }),
     ...(jdSummary !== undefined && { jdSummary }),
+    ...(templateId !== undefined && { templateId }),
   }
 
   await writeJson(VARIANTS_PATH, store)

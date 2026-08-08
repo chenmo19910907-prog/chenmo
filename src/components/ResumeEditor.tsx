@@ -1,4 +1,5 @@
 import type { Resume } from '../types/resume'
+import { mergeEducationsPatch } from '../utils/resumeEditText'
 
 interface ResumeEditorProps {
   resume: Resume
@@ -191,7 +192,7 @@ export default function ResumeEditor({ resume, onChange }: ResumeEditorProps) {
   ) => {
     const next = [...resume.educations]
     next[index] = { ...next[index], [field]: value }
-    onChange({ ...resume, educations: next })
+    onChange({ ...resume, ...mergeEducationsPatch(resume, next) })
   }
 
   const removeEducation = (index: number) => {

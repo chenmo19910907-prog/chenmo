@@ -4,6 +4,7 @@ import OptimizePanel from '../components/OptimizePanel'
 import ProfileSelector from '../components/ProfileSelector'
 import ResumeView from '../components/ResumeView'
 import { useResume } from '../context/ResumeContext'
+import { loadResumeTemplateId } from '../utils/resumeTemplateStorage'
 import type { JobMonitorConfig, ResumeProfile } from '../types/job'
 import type { Resume } from '../types/resume'
 import {
@@ -486,7 +487,7 @@ export default function AssistantPage() {
           <div className="mt-10">
             <h2 className="mb-4 text-lg font-semibold text-slate-900">优化预览</h2>
             <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-              <ResumeView resume={previewResume} />
+              <ResumeView resume={previewResume} templateId={loadResumeTemplateId()} />
               <OptimizePanel meta={previewMeta} />
             </div>
           </div>
