@@ -1,4 +1,5 @@
 import EditableSection from '../components/EditableSection'
+import { useAccessMode } from '../context/AccessModeContext'
 import { useEditMode, useModuleEditable } from '../context/EditModeContext'
 import { useProfile } from '../context/ProfileContext'
 import { useResume } from '../context/ResumeContext'
@@ -171,6 +172,7 @@ const SECTION_HEADING_INSET = 'pl-3 md:pl-4 text-2xl font-bold text-slate-900'
 export default function HomePage() {
   const { profile, updateProfile } = useProfile()
   const { resume, updateResume } = useResume()
+  const { isLocal } = useAccessMode()
   const { canEdit } = useEditMode()
   const moduleEditable = useModuleEditable()
 
@@ -189,6 +191,7 @@ export default function HomePage() {
       lifeAbout: profile.lifeAbout,
     })
   const lifePhotos = profile.lifePhotos ?? []
+  const visibleLifePhotos = isLocal ? lifePhotos : []
 
   return (
     <main className={`px-4 py-8 ${moduleEditable ? 'overflow-x-visible pr-14' : ''}`}>
@@ -337,13 +340,16 @@ export default function HomePage() {
               }))
             }}
             renderPreview={(draft) => (
-              <LifeSectionPreview {...parseLifeSection(draft)} lifePhotos={lifePhotos} />
+              <LifeSectionPreview
+                {...parseLifeSection(draft)}
+                lifePhotos={visibleLifePhotos}
+              />
             )}
           >
             <LifeSectionPreview
               hobbies={profile.hobbies ?? []}
               lifeAbout={profile.lifeAbout ?? ''}
-              lifePhotos={lifePhotos}
+              lifePhotos={visibleLifePhotos}
             />
           </EditableSection>
         </section>
