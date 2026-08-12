@@ -128,7 +128,7 @@ export async function extractJobInfoFromScreenshot(base64Image) {
         content: [
           {
             type: 'text',
-            text: '提取字段：company, title, description, requirements, salary, location。缺失字段用空字符串。只返回 JSON 对象。',
+            text: '提取字段：company, title, description, requirements, salary, location。description 与 requirements 须完整保留截图中的全部职责/要求条目（含所有编号项），不要省略。缺失字段用空字符串。只返回 JSON 对象。',
           },
           { type: 'image_url', image_url: { url: base64Image } },
         ],

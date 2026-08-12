@@ -27,10 +27,9 @@ import {
   updateApplication,
   updateVariant,
 } from '../utils/jobApi'
-import { loadResumeTemplateId, saveResumeTemplateId } from '../utils/resumeTemplateStorage'
+import { loadResumeTemplateId, resolvePageTemplateId, saveResumeTemplateId } from '../utils/resumeTemplateStorage'
 import {
   DEFAULT_RESUME_TEMPLATE_ID,
-  resolveResumeTemplateId,
   type ResumeTemplateId,
 } from '../templates'
 
@@ -107,7 +106,7 @@ export default function JobDetailPage() {
       setTemplateId(loadResumeTemplateId())
       return
     }
-    setTemplateId(resolveResumeTemplateId(variant.templateId ?? loadResumeTemplateId()))
+    setTemplateId(resolvePageTemplateId(variant.templateId))
   }, [variant?.id, variant?.templateId])
 
   const handleTemplateChange = (nextTemplateId: ResumeTemplateId) => {

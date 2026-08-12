@@ -166,7 +166,7 @@ export function buildJobAnalysis(job, meta, options = {}) {
   }
 }
 
-export function mergeParsedJobInfo(primary, secondary) {
+export function mergeParsedJobInfo(primary, secondary, options = {}) {
   const merged = { ...primary }
   if (!secondary) return merged
 
@@ -181,7 +181,12 @@ export function mergeParsedJobInfo(primary, secondary) {
   const scoreTitle = (value) => {
     const text = (value ?? '').trim()
     if (!text || text === '未命名岗位') return -5
+    if (/^\d+[）).、]\s*/.test(text)) return -10
     if (/^\d{1,2}[A-Za-z]{3}\.\d{4}$/.test(text)) return -3
+    if (/^.{8,}[，,。；;]/.test(text) && /参与|承担|推动|梳理|制定|建立|优化|协调/.test(text)) {
+      return -8
+    }
+    if (/组长/.test(text)) return 10
     if (/工程师/.test(text)) return 8
     if (/测试|开发|经理|总监|专员|专家/.test(text)) return 5
     if (/主管|招聘|猎头/i.test(text)) return 1
@@ -201,10 +206,21 @@ export function mergeParsedJobInfo(primary, secondary) {
     return left.length >= right.length ? left : right
   }
 
+  const joinSection = (a, b) => {
+    const left = (a ?? '').trim()
+    const right = (b ?? '').trim()
+    if (!left) return right
+    if (!right) return left
+    if (left.includes(right)) return left
+    if (right.includes(left)) return right
+    return `${left}\n\n${right}`
+  }
+
   merged.company = pick(primary.company, secondary.company, '未命名公司')
   merged.title = pickTitle(primary.title, secondary.title) || '未命名岗位'
-  merged.description = pickSection(primary.description, secondary.description)
-  merged.requirements = pickSection(primary.requirements, secondary.requirements)
+  const mergeSection = options.concatSections ? joinSection : pickSection
+  merged.description = mergeSection(primary.description, secondary.description)
+  merged.requirements = mergeSection(primary.requirements, secondary.requirements)
   if (secondary.salary && !merged.salary) merged.salary = secondary.salary
   if (secondary.location && !merged.location) merged.location = secondary.location
   return merged

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useResume } from '../context/ResumeContext'
 import { useAccessMode } from '../context/AccessModeContext'
@@ -18,6 +18,7 @@ export default function ResumeMakerPage() {
   const { resume } = useResume()
   const { publicSiteUrl } = useAccessMode()
   const navigate = useNavigate()
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [jdText, setJdText] = useState('')
   const [screenshots, setScreenshots] = useState<ScreenshotItem[]>([])
   const [detectedLabel, setDetectedLabel] = useState('')
@@ -44,8 +45,8 @@ export default function ResumeMakerPage() {
     return () => window.clearTimeout(timer)
   }, [jdText])
 
-  const handleScreenshots = (files: FileList | null) => {
-    if (!files?.length) return
+  const appendScreenshotFiles = (files: File[]) => {
+    if (!files.length) return
 
     const remaining = MAX_SCREENSHOTS - screenshots.length
     if (remaining <= 0) {
@@ -53,7 +54,7 @@ export default function ResumeMakerPage() {
       return
     }
 
-    const selected = Array.from(files).slice(0, remaining)
+    const selected = files.slice(0, remaining)
     void (async () => {
       try {
         const compressed = await Promise.all(selected.map((file) => compressImageFile(file)))
@@ -61,7 +62,7 @@ export default function ResumeMakerPage() {
           ...prev,
           ...compressed.map((data, index) => ({
             id: crypto.randomUUID(),
-            name: selected[index].name,
+            name: selected[index].name || `粘贴图片-${index + 1}`,
             preview: data.preview,
             base64: data.base64,
           })),
@@ -71,6 +72,21 @@ export default function ResumeMakerPage() {
         setError('图片处理失败，请换一张截图重试')
       }
     })()
+  }
+
+  const handlePaste = (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = event.clipboardData?.items
+    if (!items?.length) return
+
+    const imageFiles = Array.from(items)
+      .filter((item) => item.type.startsWith('image/'))
+      .map((item) => item.getAsFile())
+      .filter((file): file is File => file !== null)
+
+    if (imageFiles.length === 0) return
+
+    event.preventDefault()
+    appendScreenshotFiles(imageFiles)
   }
 
   const removeScreenshot = (id: string) => {
@@ -107,7 +123,7 @@ export default function ResumeMakerPage() {
         <header>
           <h1 className="text-2xl font-bold text-slate-900">简历制作</h1>
           <p className="mt-2 text-slate-600">
-            上传招聘截图或粘贴 JD（至少填写一项），系统将根据岗位自动判断优化方向并生成定制简历。生成的简历将附上
+            在同一输入区粘贴 JD 或截图（至少一项），也可选择本地图片；系统将根据岗位自动判断优化方向并生成定制简历。生成的简历将附上
             {publicSiteUrl ? (
               <span className="font-medium text-blue-700"> {publicSiteUrl} </span>
             ) : (
@@ -119,59 +135,72 @@ export default function ResumeMakerPage() {
 
         <div className="mt-8 space-y-6 rounded-2xl bg-white p-6 shadow-lg">
           <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700">
-              招聘信息截图（可选，可多选）
+            <label
+              htmlFor="resume-maker-input"
+              className="mb-2 block text-sm font-medium text-slate-700"
+            >
+              招聘信息（JD 文本 / 截图，至少填一项）
             </label>
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={(e) => {
-                handleScreenshots(e.target.files)
-                e.target.value = ''
-              }}
-              className="block w-full text-sm text-slate-600"
-            />
-            <p className="mt-1 text-xs text-slate-500">
-              支持一次选择多张图片，最多 {MAX_SCREENSHOTS} 张；上传前会自动压缩以加快提交
-            </p>
-            {screenshots.length > 0 && (
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                {screenshots.map((item) => (
-                  <div
-                    key={item.id}
-                    className="relative overflow-hidden rounded-lg border border-slate-200 bg-slate-50"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => removeScreenshot(item.id)}
-                      className="absolute right-2 top-2 z-10 rounded-full bg-slate-900/70 px-2 py-0.5 text-xs text-white hover:bg-slate-900"
+            <div className="overflow-hidden rounded-lg border border-slate-300 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500">
+              {screenshots.length > 0 && (
+                <div className="grid gap-3 border-b border-slate-200 bg-slate-50 p-3 sm:grid-cols-2">
+                  {screenshots.map((item) => (
+                    <div
+                      key={item.id}
+                      className="relative overflow-hidden rounded-lg border border-slate-200 bg-white"
                     >
-                      移除
-                    </button>
-                    <img
-                      src={item.preview}
-                      alt={item.name}
-                      className="max-h-56 w-full object-contain"
-                    />
-                    <p className="truncate px-2 py-1 text-xs text-slate-500">{item.name}</p>
-                  </div>
-                ))}
+                      <button
+                        type="button"
+                        onClick={() => removeScreenshot(item.id)}
+                        className="absolute right-2 top-2 z-10 rounded-full bg-slate-900/70 px-2 py-0.5 text-xs text-white hover:bg-slate-900"
+                      >
+                        移除
+                      </button>
+                      <img
+                        src={item.preview}
+                        alt={item.name}
+                        className="max-h-40 w-full object-contain"
+                      />
+                      <p className="truncate px-2 py-1 text-xs text-slate-500">{item.name}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <textarea
+                id="resume-maker-input"
+                value={jdText}
+                onChange={(e) => setJdText(e.target.value)}
+                onPaste={handlePaste}
+                rows={12}
+                placeholder="粘贴 Boss / 猎聘 / 官网 JD 全文，或在输入框内直接粘贴招聘截图…"
+                className="w-full resize-y border-0 px-4 py-3 text-sm focus:outline-none"
+              />
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 bg-slate-50 px-3 py-2">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 hover:border-blue-300 hover:text-blue-700"
+                >
+                  选择图片
+                </button>
+                <p className="text-xs text-slate-500">
+                  支持粘贴截图或一次选择多张，最多 {MAX_SCREENSHOTS} 张，上传前自动压缩
+                </p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => {
+                    if (e.target.files?.length) {
+                      appendScreenshotFiles(Array.from(e.target.files))
+                    }
+                    e.target.value = ''
+                  }}
+                  className="hidden"
+                />
               </div>
-            )}
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700">
-              招聘 JD（可选）
-            </label>
-            <textarea
-              value={jdText}
-              onChange={(e) => setJdText(e.target.value)}
-              rows={12}
-              placeholder="粘贴 Boss / 猎聘 / 官网 JD 全文…"
-              className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
+            </div>
           </div>
 
           {detectedLabel && (

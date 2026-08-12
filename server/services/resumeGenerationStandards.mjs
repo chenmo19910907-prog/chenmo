@@ -15,6 +15,8 @@ export const GENERATION_STANDARDS_VERSION = 1
  * 3. 职位标题去掉「· 自动化」等历史后缀
  * 4. 工作经历保留 displayCompany，详情页 tagline/teamInfo 与职位分工明确
  * 5. 个人主页写入 basicInfo.website，不追加为简介第四段
+ * 6. 个人简介采用客观表述，避免「我…」等第一人称
+ * 7. 避免「用户动因与商业闭环」等空泛表述，改用具体玩法/链路/场景
  */
 
 const SUMMARY_PARAGRAPH_ORDER = ['experience', 'platform', 'achievement', 'other']

@@ -1,18 +1,18 @@
 {
-  "title": "Yaahlan 业务智能工具平台 Agent",
-  "summary": "使用 Cursor 从零搭建的端到端智能测试平台，聚合知识库、AI 用例生成、造数/抓包验收与测试报告能力，供研发/产品/测试全项目使用。",
+  "title": "Yaahlan 智能工具 Agent",
+  "summary": "面向测试与研发的对话式工作台：支持钉钉与网页同步对话，串联 MOA 造数、Admin 查数、Tunnel 抓包、Stage 送礼、用例生成等能力（274 项能力 · 27 模块）。",
   "demoLinkVariants": [
     {
       "label": "Web Agent 对话入口",
       "local": {
         "label": "Web Agent 对话入口",
         "url": "http://127.0.0.1:18766/chat.html",
-        "description": "内网对话工作台，支持 MOA 造数、Tunnel 抓包、用例生成等"
+        "description": "内网对话工作台：钉钉同步 · MOA/Admin 查数 · Tunnel 抓包 · Stage 送礼 · 用例生成"
       },
       "public": {
         "label": "Web Agent 对话入口",
         "url": "https://chenmo19910907-prog.github.io/yaahlanAgent/web-agent/",
-        "description": "完整界面 + 假数据演示（可发消息、切换会话）；真实 MOA / Tunnel 需内网服务"
+        "description": "完整 chat.html 界面 + 假数据演示（可发消息、切换会话）；真实 MOA / Tunnel 需内网服务"
       }
     },
     {
@@ -20,12 +20,38 @@
       "local": {
         "label": "Keynote 产品演示",
         "url": "http://127.0.0.1:18766/keynote",
-        "description": "全屏产品演示：UI 细节、功能亮点、智能工厂与用量数据"
+        "description": "30 页产品演示：UI 细节、功能亮点、智能工厂与双周用量"
       },
       "public": {
         "label": "Keynote 产品演示",
         "url": "https://chenmo19910907-prog.github.io/yaahlanAgent/keynote/",
-        "description": "全屏产品演示：UI 细节、功能亮点、智能工厂与用量数据"
+        "description": "30 页产品演示：UI 细节、功能亮点、智能工厂与双周用量"
+      }
+    },
+    {
+      "label": "用 Cursor 搭建智能工具平台",
+      "local": {
+        "label": "用 Cursor 搭建智能工具平台",
+        "url": "http://127.0.0.1:18766/platform-guide/",
+        "description": "从 MOA 到 Admin、Tunnel、钉钉文档、ADB 自动化的完整搭建历程"
+      },
+      "public": {
+        "label": "用 Cursor 搭建智能工具平台",
+        "url": "https://chenmo19910907-prog.github.io/yaahlanAgent/platform-guide/",
+        "description": "从 MOA 到 Admin、Tunnel、钉钉文档、ADB 自动化的完整搭建历程"
+      }
+    },
+    {
+      "label": "PK 提款机：从零到 MOA 与自动化",
+      "local": {
+        "label": "PK 提款机：从零到 MOA 与自动化",
+        "url": "http://127.0.0.1:18766/keynote/pk-atm-guide",
+        "description": "真实协作案例：读 PRD → 抓包落 MOA → 对话迭代 C1～C8 → 赛况/返钻/提款排名验收"
+      },
+      "public": {
+        "label": "PK 提款机：从零到 MOA 与自动化",
+        "url": "https://chenmo19910907-prog.github.io/yaahlanAgent/keynote/pk-atm-guide/",
+        "description": "真实协作案例：读 PRD → 抓包落 MOA → 对话迭代 C1～C8 → 赛况/返钻/提款排名验收"
       }
     },
     {
@@ -47,8 +73,8 @@
       "title": "平台定位",
       "content": "从房间玩法与活动测试痛点出发，将业务经验沉淀为可复用的 Agent 能力，形成「懂业务 → 测玩法 → 沉淀规则 → Cursor Agent 提效」闭环。",
       "bullets": [
-        "覆盖知识库、用例生成、造数验收、抓包回归与报告输出的端到端能力",
-        "从业余 AI 脚本试水，逐步演进为正式工作中的核心提效平台"
+        "钉钉 Agent 与 Web 对话同步，274 项能力覆盖 MOA、Tunnel、用例生成与 Stage 送礼",
+        "从业余 AI 脚本试水，逐步演进为团队日常使用的核心提效平台"
       ]
     },
     {
@@ -56,8 +82,10 @@
       "content": "基于 Cursor Agent Skills + 钉钉 MCP + Python 工具链构建。",
       "bullets": [
         "AI 用例：钉钉 PRD → Agent 解析 → 规则/知识库补全 → 结构化用例输出",
+        "MOA / Admin：造 VIP/房间/礼物、手机号反查 userId、用户详情与风控解除",
+        "Tunnel 抓包：按 userId 查 HTTP 请求，核对 ec/em，Mock 验收",
+        "Stage 送礼：房间/私聊/群组送礼接口验收一条龙",
         "知识库：testcase-kb / prd-kb / bug-kb / verified-kb",
-        "造数验收：MOA 造 VIP/房间/礼物等、Tunnel 抓包、ADB 录制脚本",
         "真机自动化：Midscene AI 视觉驱动 + P0 autotest 与 HTML 报告"
       ]
     },

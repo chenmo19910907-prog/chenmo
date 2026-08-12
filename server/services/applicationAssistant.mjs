@@ -53,27 +53,38 @@ function isLocationMetaLine(line) {
 
 function isCompanyLine(line) {
   if (line.length < 2 || line.length > 40) return false
+  if (isWorkAddressLine(line)) return false
   if (/职责|要求|描述|薪资|福利|地址|地图|融资|规模/.test(line)) return false
   if (isSalaryLine(line) || isLocationMetaLine(line)) return false
   return (
     /(?:科技|网络|信息|互联网|集团|公司|有限|Inc|Ltd|工作室|实验室|研究院)/.test(line) ||
-    /^[\u4e00-\u9fffA-Za-z0-9（）()]{2,20}$/.test(line)
+    /^[\u4e00-\u9fffA-Za-z0-9（）()·]{2,20}$/.test(line)
   )
 }
 
 function isBadTitle(line) {
   if (!line) return true
+  if (/^\d+[）).、]\s*/.test(line)) return true
+  if (/^[（(]?\d+[）).、]\s*/.test(line)) return true
   if (/^\d{1,2}[A-Za-z]{3}\.\d{4}$/.test(line)) return true
   if (/^BOSS|^直聘|zhipin/i.test(line)) return true
   if (isSalaryLine(line) || isLocationMetaLine(line) || isCompanyLine(line)) return true
+  if (/^.{8,}[，,。；;]/.test(line) && /参与|承担|推动|梳理|制定|建立|优化|协调/.test(line)) return true
   return false
+}
+
+function isWorkAddressLine(line) {
+  if (!line) return false
+  return /科技园|产业园|号楼|大厦|座|层|工作地址|北领地|东升|地图|扫码/.test(line)
 }
 
 function isLikelyJobTitle(line) {
   if (!line || line.length < 2 || line.length > 40) return false
   if (isBadTitle(line)) return false
-  if (/主管|招聘|猎头|HR/i.test(line) && !/工程师/.test(line)) return false
-  return /工程师|测试|开发|经理|总监|专家|负责人|专员|架构|产品|运营|设计/.test(line)
+  if (/主管|招聘|猎头|HR/i.test(line) && !/工程师|组长/.test(line)) return false
+  return /工程师|测试|开发|经理|总监|专家|负责人|专员|架构|产品|运营|设计|组长|主管/.test(
+    line,
+  )
 }
 
 function isMapNoiseLine(line) {
@@ -83,8 +94,65 @@ function isMapNoiseLine(line) {
   }
   if (/^\d+-\d+人\s/.test(line) || /人\s+互联网$/.test(line)) return true
   if (/^[A-Z]{2,}$/.test(line)) return true
-  if (/公司|科技|有限公司/.test(line) && line.length <= 30) return true
+  if (/公司|科技|有限公司/.test(line) && line.length <= 30 && !isWorkAddressLine(line)) return true
   return false
+}
+
+export function cleanJdDisplayText(text) {
+  return cleanJdSection(text)
+}
+
+function extractCompanyFromBossText(text) {
+  const hrMatch = text.match(/([\u4e00-\u9fffA-Za-z（）()·]{2,16})\s*HR\b/i)
+  if (hrMatch) {
+    const name = hrMatch[1]
+      .replace(/^.*[•·]\s*/, '')
+      .replace(/\s*HR.*/i, '')
+      .trim()
+    if (name && !isWorkAddressLine(name)) return name
+  }
+
+  const lines = text
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line && !isNoiseLine(line))
+
+  return (
+    lines.find(
+      (line) =>
+        isCompanyLine(line) &&
+        !isWorkAddressLine(line) &&
+        line.length <= 24 &&
+        !isLikelyJobTitle(line),
+    ) ?? ''
+  )
+}
+
+/** 修正 OCR/LLM 误把职责行或地址识别成岗位/公司的问题 */
+export function refineParsedJobFromOcr(parsed, rawText = '') {
+  if (!parsed) return parsed
+  const text = String(rawText || '').trim()
+  const lines = text
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line && !isNoiseLine(line))
+
+  let company = parsed.company?.trim() ?? ''
+  let title = parsed.title?.trim() ?? ''
+
+  if (isBadTitle(title)) {
+    title = lines.find((line) => isLikelyJobTitle(line))?.replace(/\s*【.*?】\s*$/, '') ?? title
+  }
+
+  if (isWorkAddressLine(company) || !company || company.length > 24) {
+    company = extractCompanyFromBossText(text) || company
+  }
+
+  return {
+    ...parsed,
+    company,
+    title,
+  }
 }
 
 function cleanJdSection(text) {
@@ -186,7 +254,7 @@ export function parseJdText(text) {
   let inHeader = true
 
   for (const line of lines) {
-    if (/^职位描述$|^岗位职责$|^工作内容$|^职责描述$/.test(line)) {
+    if (/^职位描述$|^岗位职责$|^工作内容$|^职责描述$|^团队介绍$|^岗位亮点$/.test(line)) {
       current = 'description'
       inHeader = false
       continue

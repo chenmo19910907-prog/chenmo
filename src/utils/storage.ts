@@ -40,6 +40,57 @@ const RESUME_HEADER_VERSION_KEY = 'chenmo-resume-header-version'
 const WEBSITE_SYNC_VERSION = 1
 const WEBSITE_SYNC_KEY = 'chenmo-website-sync-version'
 
+/** 专业技能分组结构更新时递增（如回滚豆包三分类后恢复六分组） */
+const RESUME_SKILL_GROUPS_VERSION = 1
+const RESUME_SKILL_GROUPS_VERSION_KEY = 'chenmo-resume-skill-groups-version'
+
+const DOUBAO_SKILL_CATEGORIES = new Set([
+  '业务领域',
+  '工具 · 自动化 · AI 测试',
+  '软能力',
+])
+
+function isStaleSkillGroups(
+  groups: SkillGroup[] | undefined,
+  defaults: SkillGroup[],
+): boolean {
+  if (!groups?.length) return true
+  if (groups.length !== defaults.length) return true
+  if (groups.some((group) => DOUBAO_SKILL_CATEGORIES.has(group.category))) return true
+  if (groups[0]?.id !== 'skill-1') return true
+  return false
+}
+
+function syncSkillGroupsFromDefaults(
+  parsed: Resume,
+  defaults: Resume,
+): { resume: Resume; changed: boolean } {
+  try {
+    const currentVersion = localStorage.getItem(RESUME_SKILL_GROUPS_VERSION_KEY)
+    const versionStale = currentVersion !== String(RESUME_SKILL_GROUPS_VERSION)
+    const contentStale = isStaleSkillGroups(parsed.skillGroups, defaults.skillGroups ?? [])
+
+    if (!versionStale && !contentStale) {
+      return { resume: parsed, changed: false }
+    }
+
+    localStorage.setItem(
+      RESUME_SKILL_GROUPS_VERSION_KEY,
+      String(RESUME_SKILL_GROUPS_VERSION),
+    )
+
+    return {
+      resume: {
+        ...parsed,
+        skillGroups: defaults.skillGroups,
+      },
+      changed: true,
+    }
+  } catch {
+    return { resume: parsed, changed: false }
+  }
+}
+
 function mergeWorkExperiencesFromDefaults(
   stored: WorkExperience[],
   defaults: WorkExperience[],
@@ -124,7 +175,6 @@ export function loadResume(): Resume {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (stored) {
       const parsed = JSON.parse(stored) as Resume
-      const skillGroups = mergeSkillGroups(parsed.skillGroups ?? [], defaults.skillGroups ?? [])
       const summary = isStaleSummary(parsed.summary)
         ? buildSummaryFromProfile(profile) || defaults.summary
         : parsed.summary
@@ -135,13 +185,12 @@ export function loadResume(): Resume {
       const workExperiences = mergedWorks.changed
         ? mergedWorks.works
         : parsed.workExperiences ?? []
-      const websiteSync = syncWebsiteFromDefaults(
-        { ...parsed, skillGroups, summary, workExperiences },
-        defaults,
-      )
+      const withSummary = { ...parsed, summary, workExperiences }
+      const skillSync = syncSkillGroupsFromDefaults(withSummary, defaults)
+      const websiteSync = syncWebsiteFromDefaults(skillSync.resume, defaults)
       const next = websiteSync.resume
       if (
-        skillGroups.length !== (parsed.skillGroups ?? []).length ||
+        skillSync.changed ||
         summary !== parsed.summary ||
         mergedWorks.changed ||
         websiteSync.changed
@@ -165,6 +214,7 @@ export function resetResume(): Resume {
   localStorage.removeItem(STORAGE_KEY)
   localStorage.removeItem(RESUME_HEADER_VERSION_KEY)
   localStorage.removeItem(WEBSITE_SYNC_KEY)
+  localStorage.removeItem(RESUME_SKILL_GROUPS_VERSION_KEY)
   return defaultResume as Resume
 }
 

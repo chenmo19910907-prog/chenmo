@@ -12,6 +12,7 @@ import {
   generateInterviewPrep,
   generateSelfIntro,
   parseJdText,
+  cleanJdDisplayText,
   STATUS_LABELS,
 } from './services/applicationAssistant.mjs'
 import {
@@ -100,6 +101,27 @@ const app = express()
 app.set('trust proxy', true)
 app.use(cors())
 app.use(express.json({ limit: '50mb' }))
+
+const JD_SUMMARY_MAX_LENGTH = 8000
+
+function buildJdSummary({ jdText = '', job, rawJdText = '' }) {
+  const raw = jdText.trim()
+    ? jdText.trim()
+    : rawJdText.trim()
+      ? cleanJdDisplayText(rawJdText)
+      : [job?.description, job?.requirements].filter(Boolean).join('\n\n')
+  const trimmed = raw.trim()
+  if (!trimmed) return undefined
+  return trimmed.length > JD_SUMMARY_MAX_LENGTH
+    ? trimmed.slice(0, JD_SUMMARY_MAX_LENGTH)
+    : trimmed
+}
+
+function parsedFieldsFromExtracted(extracted) {
+  if (!extracted) return null
+  const { rawText: _rawText, ...fields } = extracted
+  return fields
+}
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true, service: 'chenmo-job-assistant' })
@@ -459,18 +481,14 @@ app.post('/api/variants/:id/analyze', async (req, res) => {
 
   let extractionSource = current.jobAnalysis?.extractionSource ?? 'jd'
   const screenshotImages = await readAllScreenshotsAsBase64(current.id)
-  const needsExtract =
-    !job.company ||
-    job.company === '未命名公司' ||
-    !job.title ||
-    job.title === '未命名岗位' ||
-    !job.description?.trim() ||
-    !job.requirements?.trim()
+  let extractedRawText = ''
 
-  if (screenshotImages.length > 0 && needsExtract) {
+  if (screenshotImages.length > 0) {
     try {
       const extracted = await extractJobInfoFromScreenshots(screenshotImages)
       if (extracted) {
+        extractedRawText = extracted.rawText ?? ''
+        const fields = parsedFieldsFromExtracted(extracted)
         const merged = mergeParsedJobInfo(
           {
             company: job.company,
@@ -478,7 +496,8 @@ app.post('/api/variants/:id/analyze', async (req, res) => {
             description: job.description,
             requirements: job.requirements,
           },
-          extracted,
+          fields,
+          { concatSections: true },
         )
         job = enrichJob({
           ...job,
@@ -518,7 +537,7 @@ app.post('/api/variants/:id/analyze', async (req, res) => {
     resume: optimized.resume,
     jobAnalysis,
     jdSummary:
-      [job.description, job.requirements].filter(Boolean).join('\n').slice(0, 500) ||
+      buildJdSummary({ job, rawJdText: extractedRawText }) ||
       current.jdSummary ||
       undefined,
   }
@@ -1028,12 +1047,16 @@ app.post('/api/resume-maker', async (req, res) => {
 
   let parsed = parseJdText(jdText)
   let extractionSource = 'jd'
+  let extractedRawText = ''
 
   if (screenshotInputs.length > 0) {
     try {
       const extracted = await extractJobInfoFromScreenshots(screenshotInputs)
       if (extracted) {
-        parsed = mergeParsedJobInfo(parsed, extracted)
+        extractedRawText = extracted.rawText ?? ''
+        parsed = mergeParsedJobInfo(parsed, parsedFieldsFromExtracted(extracted), {
+          concatSections: true,
+        })
         extractionSource = jdText.trim() ? 'mixed' : 'screenshot'
       }
     } catch (err) {
@@ -1094,9 +1117,7 @@ app.post('/api/resume-maker', async (req, res) => {
   const profileSiteUrl = resolvePublicSiteUrl(req)
   variant.publicUrl = resolveResumePublicUrl(req, variant.id)
   variant.profileSiteUrl = profileSiteUrl || undefined
-  variant.jdSummary = jdText.trim()
-    ? jdText.trim().slice(0, 500)
-    : [parsed.description, parsed.requirements].filter(Boolean).join('\n').slice(0, 500) || undefined
+  variant.jdSummary = buildJdSummary({ jdText, job, rawJdText: extractedRawText })
 
   if (screenshotInputs.length > 0) {
     try {

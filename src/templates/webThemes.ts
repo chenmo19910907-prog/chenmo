@@ -1,5 +1,12 @@
 import type { ResumeLayoutId, ResumeTemplateId } from './types'
 import { PREMIUM_WEB_THEMES } from './premiumWebThemes'
+import { DOCX_RESUME_THEMES, type DocxResumeTheme } from './docxThemes'
+import {
+  themeBgClass,
+  themeBorderClass,
+  themeDecorationClass,
+  themeTextClass,
+} from './themeColorUtils'
 
 export interface WebResumeTheme {
   id: ResumeTemplateId
@@ -201,88 +208,44 @@ const SIDEBAR_ACCENTS: Record<
   },
 }
 
-const TIMELINE_BASE: Omit<
-  WebResumeTheme,
-  | 'id'
-  | 'layout'
-  | 'header'
-  | 'link'
-  | 'featuredBadge'
-  | 'educationCard'
-  | 'bullet'
-  | 'timelineRail'
-  | 'timelineDot'
-> = {
+const TIMELINE_STRUCTURE = {
   article:
     'mx-auto max-w-[780px] overflow-visible border border-slate-200 bg-white px-8 py-10 md:px-12 md:py-12',
-  sectionTitle: 'mb-5 text-[12px] font-semibold uppercase tracking-[0.32em] text-slate-400',
-  name: 'text-[32px] font-light tracking-tight text-slate-900 md:text-[36px]',
-  subtitle: 'mt-2 text-[15px] font-normal text-slate-500',
-  contact: 'mt-4 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-slate-500',
   contactLabel: 'sr-only',
   contactDot: 'hidden',
-  body: 'text-[14px] leading-[1.85] text-slate-600',
   workBorder: 'relative pl-8',
-  workCompany: 'text-[15px] font-semibold text-slate-900',
-  workPosition: 'mt-0.5 text-[13px] text-slate-500',
-  workDate:
-    'mb-1 block text-[11px] font-medium uppercase tracking-[0.2em] text-slate-400 md:mb-0 md:shrink-0 md:text-right',
-  educationSchool: 'font-semibold text-slate-900',
-  educationMeta: 'font-normal text-slate-500',
+} as const
+
+function timelineWebFromDocx(c: DocxResumeTheme): Omit<WebResumeTheme, 'id' | 'layout' | 'article' | 'contactLabel' | 'contactDot' | 'workBorder'> {
+  return {
+    header: `border-b pb-6 text-left ${themeBorderClass(c.headerDivider)}`,
+    name: `text-[32px] font-light tracking-tight md:text-[36px] ${themeTextClass(c.heading)}`,
+    subtitle: `mt-2 text-[15px] font-normal ${themeTextClass(c.title)}`,
+    contact: `mt-4 flex flex-wrap gap-x-4 gap-y-1 text-[12px] ${themeTextClass(c.title)}`,
+    link: `${themeTextClass(c.link)} underline ${themeDecorationClass(c.link)} underline-offset-4 hover:opacity-80`,
+    sectionTitle: `mb-5 border-b pb-2 text-[12px] font-semibold uppercase tracking-[0.32em] ${themeBorderClass(c.sectionBar)} ${themeTextClass(c.section)}`,
+    body: `text-[14px] leading-[1.85] ${themeTextClass(c.body)}`,
+    workCompany: `text-[15px] font-semibold ${themeTextClass(c.heading)}`,
+    workPosition: `mt-0.5 text-[13px] ${themeTextClass(c.title)}`,
+    workDate: `mb-1 block text-[11px] font-medium uppercase tracking-[0.2em] md:mb-0 md:shrink-0 md:text-right ${themeTextClass(c.muted)}`,
+    featuredBadge: `rounded-full border px-2 py-0.5 text-[10px] font-medium ${themeBorderClass(c.bullet)} ${themeTextClass(c.title)}`,
+    educationCard: `border-l-2 pl-4 text-[14px] ${themeBorderClass(c.sectionBar)}`,
+    educationSchool: `font-semibold ${themeTextClass(c.heading)}`,
+    educationMeta: `font-normal ${themeTextClass(c.title)}`,
+    bullet: `mt-[9px] h-px w-3 shrink-0 ${themeBgClass(c.bullet)}`,
+    timelineRail: `absolute left-[7px] top-3 bottom-0 w-px ${themeBgClass(c.muted)} opacity-40`,
+    timelineDot: `absolute left-0 top-1.5 h-[15px] w-[15px] rounded-full border-2 bg-white ${themeBorderClass(c.sectionBar)}`,
+  }
 }
 
-const TIMELINE_ACCENTS: Record<
-  'timeline' | 'timeline-blue' | 'timeline-teal' | 'timeline-rose',
-  Pick<
-    WebResumeTheme,
-    'header' | 'link' | 'featuredBadge' | 'educationCard' | 'bullet' | 'timelineRail' | 'timelineDot'
-  >
-> = {
-  timeline: {
-    header: 'border-b border-slate-900 pb-6 text-left',
-    link: 'text-slate-800 underline decoration-slate-300 underline-offset-4 hover:text-slate-600',
-    featuredBadge:
-      'rounded-full border border-slate-300 px-2 py-0.5 text-[10px] font-medium text-slate-600',
-    educationCard: 'border-l-2 border-slate-900 pl-4 text-[14px]',
-    bullet: 'mt-[9px] h-px w-3 shrink-0 bg-slate-400',
-    timelineRail: 'absolute left-[7px] top-3 bottom-0 w-px bg-slate-200',
-    timelineDot:
-      'absolute left-0 top-1.5 h-[15px] w-[15px] rounded-full border-2 border-slate-900 bg-white',
-  },
-  'timeline-blue': {
-    header: 'border-b border-blue-800 pb-6 text-left',
-    link: 'text-blue-800 underline decoration-blue-300 underline-offset-4 hover:text-blue-600',
-    featuredBadge:
-      'rounded-full border border-blue-300 px-2 py-0.5 text-[10px] font-medium text-blue-700',
-    educationCard: 'border-l-2 border-blue-700 pl-4 text-[14px]',
-    bullet: 'mt-[9px] h-px w-3 shrink-0 bg-blue-500',
-    timelineRail: 'absolute left-[7px] top-3 bottom-0 w-px bg-blue-200',
-    timelineDot:
-      'absolute left-0 top-1.5 h-[15px] w-[15px] rounded-full border-2 border-blue-700 bg-white',
-  },
-  'timeline-teal': {
-    header: 'border-b border-teal-800 pb-6 text-left',
-    link: 'text-teal-800 underline decoration-teal-300 underline-offset-4 hover:text-teal-600',
-    featuredBadge:
-      'rounded-full border border-teal-300 px-2 py-0.5 text-[10px] font-medium text-teal-700',
-    educationCard: 'border-l-2 border-teal-700 pl-4 text-[14px]',
-    bullet: 'mt-[9px] h-px w-3 shrink-0 bg-teal-500',
-    timelineRail: 'absolute left-[7px] top-3 bottom-0 w-px bg-teal-200',
-    timelineDot:
-      'absolute left-0 top-1.5 h-[15px] w-[15px] rounded-full border-2 border-teal-700 bg-white',
-  },
-  'timeline-rose': {
-    header: 'border-b border-rose-800 pb-6 text-left',
-    link: 'text-rose-800 underline decoration-rose-300 underline-offset-4 hover:text-rose-600',
-    featuredBadge:
-      'rounded-full border border-rose-300 px-2 py-0.5 text-[10px] font-medium text-rose-700',
-    educationCard: 'border-l-2 border-rose-700 pl-4 text-[14px]',
-    bullet: 'mt-[9px] h-px w-3 shrink-0 bg-rose-500',
-    timelineRail: 'absolute left-[7px] top-3 bottom-0 w-px bg-rose-200',
-    timelineDot:
-      'absolute left-0 top-1.5 h-[15px] w-[15px] rounded-full border-2 border-rose-700 bg-white',
-  },
-}
+const TIMELINE_TEMPLATE_IDS = [
+  'timeline',
+  'timeline-blue',
+  'timeline-teal',
+  'timeline-rose',
+] as const
+
+type TimelineTemplateId = (typeof TIMELINE_TEMPLATE_IDS)[number]
 
 const MAGAZINE_BASE: Omit<
   WebResumeTheme,
@@ -380,8 +343,13 @@ function buildSidebarTheme(id: keyof typeof SIDEBAR_ACCENTS): WebResumeTheme {
   return { id, layout: 'sidebar', ...SIDEBAR_BASE, ...SIDEBAR_ACCENTS[id] }
 }
 
-function buildTimelineTheme(id: keyof typeof TIMELINE_ACCENTS): WebResumeTheme {
-  return { id, layout: 'timeline', ...TIMELINE_BASE, ...TIMELINE_ACCENTS[id] }
+function buildTimelineTheme(id: TimelineTemplateId): WebResumeTheme {
+  return {
+    id,
+    layout: 'timeline',
+    ...TIMELINE_STRUCTURE,
+    ...timelineWebFromDocx(DOCX_RESUME_THEMES[id]),
+  }
 }
 
 function buildMagazineTheme(id: keyof typeof MAGAZINE_ACCENTS): WebResumeTheme {

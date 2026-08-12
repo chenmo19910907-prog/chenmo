@@ -4,7 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
-import { parseJdText } from './applicationAssistant.mjs'
+import { parseJdText, refineParsedJobFromOcr } from './applicationAssistant.mjs'
 import { mergeParsedJobInfo } from './jobAnalysis.mjs'
 import { extractJobInfoFromScreenshot as extractViaLlm } from './llmService.mjs'
 
@@ -52,7 +52,7 @@ export async function ocrScreenshotBase64(base64Image) {
 
 function parsedFromOcrText(text) {
   if (!text?.trim()) return null
-  const parsed = parseJdText(text)
+  const parsed = refineParsedJobFromOcr(parseJdText(text), text)
   const hasStructured =
     parsed.company?.trim() ||
     parsed.title?.trim() ||
@@ -61,13 +61,16 @@ function parsedFromOcrText(text) {
 
   if (hasStructured) return parsed
 
-  return {
-    company: '',
-    title: '',
-    description: text.trim(),
-    requirements: '',
-    channel: 'boss',
-  }
+  return refineParsedJobFromOcr(
+    {
+      company: '',
+      title: '',
+      description: text.trim(),
+      requirements: '',
+      channel: 'boss',
+    },
+    text,
+  )
 }
 
 async function extractViaOcr(base64Image) {
@@ -106,22 +109,48 @@ const EMPTY_PARSED = {
   channel: 'boss',
 }
 
-/** 从一张或多张招聘截图提取公司与 JD（LLM 优先，macOS Vision OCR 兜底） */
+/** 从一张或多张招聘截图提取公司与 JD（先合并 OCR 全文，再结构化解析） */
 export async function extractJobInfoFromScreenshots(base64Images = []) {
   if (!base64Images.length) return null
 
+  const ocrTexts = []
+  for (const image of base64Images) {
+    const text = await ocrScreenshotBase64(image)
+    if (text?.trim()) ocrTexts.push(text.trim())
+  }
+
   let merged = { ...EMPTY_PARSED }
+  const combinedOcr = ocrTexts.join('\n\n')
+
+  if (combinedOcr) {
+    const parsed = parsedFromOcrText(combinedOcr)
+    if (parsed) merged = mergeParsedJobInfo(merged, parsed, { concatSections: true })
+  }
 
   for (const image of base64Images) {
-    const parsed = await extractFromSingleScreenshot(image)
-    if (parsed) merged = mergeParsedJobInfo(merged, parsed)
+    try {
+      const llmResult = await extractViaLlm(image)
+      if (llmResult) {
+        merged = mergeParsedJobInfo(merged, llmResult, { concatSections: true })
+      }
+    } catch (err) {
+      console.error('[screenshot] llm extract failed:', err.message)
+    }
   }
+
+  merged = refineParsedJobFromOcr(merged, combinedOcr)
 
   const hasContent =
     merged.company?.trim() ||
     merged.title?.trim() ||
     merged.description?.trim() ||
-    merged.requirements?.trim()
+    merged.requirements?.trim() ||
+    combinedOcr
 
-  return hasContent ? merged : null
+  if (!hasContent) return null
+
+  return {
+    ...merged,
+    rawText: combinedOcr,
+  }
 }

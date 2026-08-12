@@ -20,6 +20,7 @@ import {
 import { cleanResumeSummary, normalizeDisplayTitle } from '../../utils/cleanResumeSummary'
 import { getWorkDisplayCompany } from '../../utils/workDisplay'
 import { toReadableResumeText, splitSummaryParagraphs } from '../../utils/readableResumeText'
+import { RESUME_WEBSITE_CTA } from '../../utils/resumeExportStandards'
 
 export const MAX_WORK_HIGHLIGHTS = 5
 
@@ -107,14 +108,14 @@ export function WebsiteCta({ url }: { url?: string }) {
   if (!url?.trim()) return null
 
   return (
-    <p className="mt-3 text-[13px] text-slate-500">
-      更多项目与作品见个人主页：
+    <p className={`mt-3 text-[13px] ${theme.body}`}>
       <a
         href={url}
         target="_blank"
         rel="noopener noreferrer"
         className={theme.link}
       >
+        {RESUME_WEBSITE_CTA}
         {formatWebsiteDisplayUrl(url)}
       </a>
     </p>

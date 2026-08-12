@@ -6,6 +6,7 @@ import {
   AlignmentType,
   BorderStyle,
   Document,
+  ExternalHyperlink,
   ImageRun,
   Packer,
   Paragraph,
@@ -35,9 +36,10 @@ import {
   PARAGRAPH_SPACING,
   RESUME_BULLET,
   RESUME_SIZE,
-  resumeDocumentStyles,
+  createResumeDocumentStyles,
   resumeRun,
 } from './resumeDocxTheme'
+import { RESUME_WEBSITE_CTA } from './resumeExportStandards'
 import {
   getDocxAvatarSize,
   loadResumeAvatarForDocx,
@@ -562,24 +564,23 @@ function createDocxBuilders(theme: DocxResumeTheme) {
     )
 
     if (basicInfo.website?.trim()) {
-      const displayUrl = formatWebsiteDisplayUrl(basicInfo.website)
+      const href = formatWebsiteDisplayUrl(basicInfo.website)
       children.push(
         new Paragraph({
           alignment: headerAlignment,
           spacing: { after: 0, ...BODY_LINE_SPACING },
           children: [
-            resumeRun({
-              text: '更多项目与作品见个人主页：',
-              size: RESUME_SIZE.website,
-              color: theme.title,
-              characterSpacing: 0,
-            }),
-            resumeRun({
-              text: displayUrl,
-              size: RESUME_SIZE.website,
-              color: theme.link,
-              underline: {},
-              characterSpacing: 0,
+            new ExternalHyperlink({
+              link: href,
+              children: [
+                resumeRun({
+                  text: `${RESUME_WEBSITE_CTA}${href}`,
+                  size: RESUME_SIZE.website,
+                  color: theme.link,
+                  underline: {},
+                  characterSpacing: 0,
+                }),
+              ],
             }),
           ],
         }),
@@ -651,7 +652,7 @@ export async function exportToWord(
     : undefined
 
   const doc = new Document({
-    styles: resumeDocumentStyles,
+    styles: createResumeDocumentStyles(theme),
     sections: [{ properties: {}, children: buildParagraphs(resume, avatar) }],
   })
 

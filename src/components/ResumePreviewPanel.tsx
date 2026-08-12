@@ -1,4 +1,5 @@
 import ResumeView from './ResumeView'
+import CollapsibleSection from './CollapsibleSection'
 import TemplateSelector from './TemplateSelector'
 import { loadProfile } from '../utils/storage'
 import { getResumeAvatarDisplayUrl, resolveProfileAvatarUrl } from '../utils/resumeAvatar'
@@ -94,34 +95,23 @@ export default function ResumePreviewPanel({
 
   return (
     <div className={`space-y-4 ${editable ? 'overflow-visible pr-14' : ''}`}>
-      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 bg-slate-50/50 px-3 py-2.5 sm:px-4">
-          <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-slate-900">简历模版</h3>
-            <p className="mt-0.5 text-xs leading-snug text-slate-500">
-              清简通栏可选配色；经典与高级共 8 种版式，各含 4 套配色
-            </p>
+      <CollapsibleSection
+        title="简历模版"
+        subtitle="清简通栏可选配色；经典与高级共 8 种版式，各含 4 套配色"
+        defaultOpen={false}
+        className="mb-0"
+      >
+        {onResumeChange && (
+          <div className="mb-3 rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2">
+            <AvatarToggle
+              checked={showAvatar}
+              previewUrl={avatarPreviewUrl}
+              onChange={handleShowAvatarChange}
+            />
           </div>
-
-          {onResumeChange && (
-            <div className="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-2">
-              <AvatarToggle
-                checked={showAvatar}
-                previewUrl={avatarPreviewUrl}
-                onChange={handleShowAvatarChange}
-              />
-            </div>
-          )}
-        </div>
-
-        <div className="p-3 sm:p-3.5">
-          <TemplateSelector
-            value={templateId}
-            onChange={onTemplateChange}
-            layout="panel"
-          />
-        </div>
-      </section>
+        )}
+        <TemplateSelector value={templateId} onChange={onTemplateChange} layout="panel" />
+      </CollapsibleSection>
 
       <ResumeView
         resume={resume}

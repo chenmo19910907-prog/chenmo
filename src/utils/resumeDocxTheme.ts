@@ -3,6 +3,7 @@
  * @see ./resumeExportStandards.ts 完整版式规范
  */
 import { LineRuleType, TextRun } from 'docx'
+import type { DocxResumeTheme } from '../templates/docxThemes'
 import { RESUME_EXPORT_SPEC } from './resumeExportStandards'
 
 /** 与 src/index.css、ResumeView 预览一致 */
@@ -74,18 +75,34 @@ export function resumeRun({
   })
 }
 
-export const resumeDocumentStyles = {
-  default: {
-    document: {
-      run: {
-        font: RESUME_FONT,
-        size: RESUME_SIZE.body,
-        color: RESUME_COLOR.body,
-        characterSpacing: BODY_CHARACTER_SPACING,
-      },
-      paragraph: {
-        spacing: BODY_LINE_SPACING,
+export function createResumeDocumentStyles(theme: DocxResumeTheme) {
+  return {
+    default: {
+      document: {
+        run: {
+          font: RESUME_FONT,
+          size: RESUME_SIZE.body,
+          color: theme.body,
+          characterSpacing: BODY_CHARACTER_SPACING,
+        },
+        paragraph: {
+          spacing: BODY_LINE_SPACING,
+        },
       },
     },
-  },
+  }
 }
+
+/** @deprecated 请使用 createResumeDocumentStyles(theme) */
+export const resumeDocumentStyles = createResumeDocumentStyles({
+  layout: 'standard',
+  heading: RESUME_COLOR.heading,
+  title: RESUME_COLOR.title,
+  body: RESUME_COLOR.body,
+  muted: RESUME_COLOR.muted,
+  section: RESUME_COLOR.section,
+  link: RESUME_COLOR.link,
+  sectionBar: RESUME_EXPORT_SPEC.color.sectionBar,
+  headerDivider: RESUME_EXPORT_SPEC.color.headerDivider,
+  bullet: RESUME_EXPORT_SPEC.color.bullet,
+})

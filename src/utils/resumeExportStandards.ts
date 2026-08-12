@@ -88,6 +88,9 @@ export const RESUME_EXPORT_SPEC = {
 
 export type ResumeExportSpec = typeof RESUME_EXPORT_SPEC
 
+/** 页眉个人主页引导语（预览与 Word 导出共用） */
+export const RESUME_WEBSITE_CTA = '查看在线项目案例：'
+
 /**
  * 页眉：姓名、头衔、联系方式（· 分隔）居中；有个人主页时追加链接行，再跟浅灰分隔线。
  */
@@ -95,7 +98,7 @@ export const RESUME_EXPORT_HEADER_RULES = [
   '姓名加粗居中',
   '头衔居中（normalizeDisplayTitle 去尾缀）',
   '电话 · 邮箱 · 地点 · 学历 居中',
-  '有个人主页：更多项目与作品见个人主页：{url}（链接保留 https://）',
+  `有个人主页：${RESUME_WEBSITE_CTA}{url}（链接保留 https://）`,
   '页眉底部分隔线（F1F5F9）',
 ] as const
 
@@ -116,6 +119,7 @@ export const RESUME_EXPORT_SUMMARY_RULES = [
   '不使用「核心匹配」前缀',
   '个人主页写在 basicInfo.website，不追加为简介第四段',
   '段落顺序见 resumeGenerationStandards（履历 → 平台 Agent → 业绩）',
+  '采用客观表述，避免第一人称「我…」',
 ] as const
 
 /**

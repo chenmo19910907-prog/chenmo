@@ -9,7 +9,7 @@ import { getVariantScreenshotUrls } from '../utils/variantScreenshots'
 import { shouldSyncWebsite } from '../utils/publicSiteUrl'
 import { applyProfileToResume, applyPublicSiteUrl } from '../utils/resumeSync'
 import { parseVariantMeta, serializeVariantMeta } from '../utils/resumeEditText'
-import { loadResumeTemplateId, saveResumeTemplateId } from '../utils/resumeTemplateStorage'
+import { resolvePageTemplateId, saveResumeTemplateId } from '../utils/resumeTemplateStorage'
 import { useAccessMode } from '../context/AccessModeContext'
 import { useModuleEditable } from '../context/EditModeContext'
 import JobAnalysisCard from '../components/JobAnalysisCard'
@@ -18,7 +18,6 @@ import type { Resume } from '../types/resume'
 import type { ResumeVariant } from '../types/job'
 import {
   DEFAULT_RESUME_TEMPLATE_ID,
-  resolveResumeTemplateId,
   type ResumeTemplateId,
 } from '../templates'
 
@@ -49,7 +48,7 @@ export default function GeneratedResumeDetailPage() {
 
   useEffect(() => {
     if (!variant) return
-    setTemplateId(resolveResumeTemplateId(variant.templateId ?? loadResumeTemplateId()))
+    setTemplateId(resolvePageTemplateId(variant.templateId))
   }, [variant?.id, variant?.templateId])
 
   const persistVariant = async (
