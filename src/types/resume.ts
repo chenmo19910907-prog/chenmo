@@ -4,6 +4,7 @@ export interface BasicInfo {
   phone: string
   email: string
   location: string
+  degree?: string
   website?: string
   github?: string
   /** 是否在简历页眉展示个人头像 */
