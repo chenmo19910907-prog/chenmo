@@ -1,18 +1,21 @@
-import { Link } from 'react-router-dom'
-import platformData from '../data/yaahlan-platform.json'
-import type { YaahlanPlatform } from '../types/profile'
-
-const platform = platformData as YaahlanPlatform
+import { Link, useLocation } from 'react-router-dom'
+import { RESTORE_SCROLL_STATE } from '../components/ScrollToTop'
+import { useYaahlanPlatform } from '../hooks/useYaahlanPlatform'
 
 export default function PlatformDetailPage() {
+  const location = useLocation()
+  const platform = useYaahlanPlatform()
+  const fromHome = (location.state as { from?: string } | null)?.from === 'home'
+
   return (
     <main className="px-4 py-8">
       <article className="mx-auto max-w-3xl">
         <Link
-          to="/works/work-0"
+          to={fromHome ? '/' : '/works/work-0'}
+          state={fromHome ? RESTORE_SCROLL_STATE : undefined}
           className="mb-6 inline-block text-sm text-blue-600 hover:underline"
         >
-          ← 返回陌陌工作详情
+          {fromHome ? '← 返回个人介绍' : '← 返回陌陌工作详情'}
         </Link>
 
         <header className="rounded-2xl bg-gradient-to-br from-violet-700 to-blue-900 p-8 text-white shadow-lg md:p-10">
@@ -39,7 +42,7 @@ export default function PlatformDetailPage() {
                 <div className="mt-4 space-y-3">
                   {section.links.map((link) => (
                     <div
-                      key={link.label}
+                      key={`${link.label}-${link.url}`}
                       className="rounded-xl border border-slate-200 p-4 transition hover:border-violet-300 hover:bg-violet-50/50"
                     >
                       {link.url.startsWith('http') ? (

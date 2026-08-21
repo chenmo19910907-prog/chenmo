@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import ApplyPackPanel from '../components/ApplyPackPanel'
 import OptimizePanel from '../components/OptimizePanel'
 import ProfileSelector from '../components/ProfileSelector'
-import ResumeView from '../components/ResumeView'
+import ResumePreviewPanel from '../components/ResumePreviewPanel'
 import StatusBadge, { StatusSelect } from '../components/StatusBadge'
 import { useResume } from '../context/ResumeContext'
 import type {
@@ -25,7 +25,13 @@ import {
   fetchVariants,
   optimizeForJob,
   updateApplication,
+  updateVariant,
 } from '../utils/jobApi'
+import { loadResumeTemplateId, resolvePageTemplateId, saveResumeTemplateId } from '../utils/resumeTemplateStorage'
+import {
+  DEFAULT_RESUME_TEMPLATE_ID,
+  type ResumeTemplateId,
+} from '../templates'
 
 type Tab = 'resume' | 'apply' | 'track'
 
@@ -46,6 +52,7 @@ export default function JobDetailPage() {
   const [savingNote, setSavingNote] = useState(false)
   const [nextAction, setNextAction] = useState('')
   const [nextActionDate, setNextActionDate] = useState('')
+  const [templateId, setTemplateId] = useState<ResumeTemplateId>(DEFAULT_RESUME_TEMPLATE_ID)
 
   const load = useCallback(async () => {
     if (!id) return
@@ -93,6 +100,23 @@ export default function JobDetailPage() {
   useEffect(() => {
     load()
   }, [load])
+
+  useEffect(() => {
+    if (!variant) {
+      setTemplateId(loadResumeTemplateId())
+      return
+    }
+    setTemplateId(resolvePageTemplateId(variant.templateId))
+  }, [variant?.id, variant?.templateId])
+
+  const handleTemplateChange = (nextTemplateId: ResumeTemplateId) => {
+    setTemplateId(nextTemplateId)
+    saveResumeTemplateId(nextTemplateId)
+    if (!variant) return
+    void updateVariant(variant.id, { templateId: nextTemplateId })
+      .then(setVariant)
+      .catch(() => showMessage('模版保存失败'))
+  }
 
   const handleOptimize = async () => {
     if (!id) return
@@ -178,7 +202,10 @@ export default function JobDetailPage() {
     const data = viewMode === 'optimized' && variant ? variant.resume : resume
     try {
       const suffix = variant ? `-${variant.company}-${variant.jobTitle}` : ''
-      await exportToWord(data, `${resume.basicInfo.name}${suffix}-定制简历.docx`)
+      await exportToWord(data, {
+        filename: `${resume.basicInfo.name}${suffix}-定制简历.docx`,
+        templateId,
+      })
       showMessage('Word 已导出')
     } catch {
       showMessage('导出失败')
@@ -318,8 +345,14 @@ export default function JobDetailPage() {
                 </button>
               </div>
             )}
-            <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_320px]">
-              <ResumeView resume={displayResume} />
+            <div className="mt-6 grid gap-6 overflow-visible lg:grid-cols-[1fr_320px]">
+              <div className="min-w-0 overflow-visible">
+                <ResumePreviewPanel
+                resume={displayResume}
+                templateId={templateId}
+                onTemplateChange={handleTemplateChange}
+              />
+              </div>
               {variant && viewMode === 'optimized' && (
                 <OptimizePanel meta={variant.meta} />
               )}

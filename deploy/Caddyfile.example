@@ -1,0 +1,7 @@
+# 反代到本机 chenmo 服务，自动 HTTPS（需域名已解析到本机且 80/443 已转发）
+# 用法：brew install caddy && caddy run --config deploy/Caddyfile.example
+# 将 resume.example.com 改为你的域名
+
+resume.example.com {
+    reverse_proxy 127.0.0.1:3456
+}

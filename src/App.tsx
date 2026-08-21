@@ -1,7 +1,9 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
 import LocalOnly from './components/LocalOnly'
+import ScrollToTop from './components/ScrollToTop'
 import { AccessModeProvider } from './context/AccessModeContext'
+import { ProfileProvider } from './context/ProfileContext'
 import { ResumeProvider } from './context/ResumeContext'
 import ApplicationsPage from './pages/ApplicationsPage'
 import EditPage from './pages/EditPage'
@@ -14,21 +16,24 @@ import JobsPage from './pages/JobsPage'
 import PlatformDetailPage from './pages/PlatformDetailPage'
 import PublicResumePage from './pages/PublicResumePage'
 import ResumeMakerPage from './pages/ResumeMakerPage'
-import WorkDetailPage from './pages/WorkDetailPage'
 import WorkListPage from './pages/WorkListPage'
+
+const routerBasename = import.meta.env.BASE_URL.replace(/\/$/, '') || undefined
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={routerBasename}>
+      <ScrollToTop />
       <AccessModeProvider>
-        <ResumeProvider>
+        <ProfileProvider>
+          <ResumeProvider>
           <Routes>
             <Route path="/r/:id" element={<PublicResumePage />} />
 
             <Route element={<Layout />}>
               <Route path="/" element={<HomePage />} />
               <Route path="/works" element={<WorkListPage />} />
-              <Route path="/works/:id" element={<WorkDetailPage />} />
+              <Route path="/works/:id" element={<WorkListPage />} />
               <Route path="/works/work-0/platform" element={<PlatformDetailPage />} />
 
               <Route
@@ -97,7 +102,8 @@ export default function App() {
               />
             </Route>
           </Routes>
-        </ResumeProvider>
+          </ResumeProvider>
+        </ProfileProvider>
       </AccessModeProvider>
     </BrowserRouter>
   )

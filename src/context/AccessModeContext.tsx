@@ -7,7 +7,13 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { isLocalClientAccess } from '../utils/accessMode'
+import { useLocation } from 'react-router-dom'
+import {
+  isLocalClientAccess,
+  isLocalHostname,
+  isPublicPreviewMode,
+  syncPublicPreviewFromUrl,
+} from '../utils/accessMode'
 
 interface AccessModeState {
   isLocal: boolean
@@ -19,17 +25,21 @@ interface AccessModeState {
 const AccessModeContext = createContext<AccessModeState | null>(null)
 
 export function AccessModeProvider({ children }: { children: ReactNode }) {
+  const location = useLocation()
   const [isLocal, setIsLocal] = useState(isLocalClientAccess())
   const [loading, setLoading] = useState(true)
   const [publicSiteUrl, setPublicSiteUrl] = useState('')
 
   const refresh = useCallback(async () => {
-    const clientLocal = isLocalClientAccess()
+    syncPublicPreviewFromUrl(location.search)
+    const preview = isPublicPreviewMode()
+    const onLocalHost = typeof window !== 'undefined' && isLocalHostname(window.location.hostname)
+    const clientLocal = onLocalHost && !preview
     try {
       const res = await fetch('/api/access-mode')
       if (res.ok) {
         const data = (await res.json()) as { isLocal: boolean; publicSiteUrl: string }
-        setIsLocal(data.isLocal || clientLocal)
+        setIsLocal((data.isLocal || onLocalHost) && !preview)
         setPublicSiteUrl(data.publicSiteUrl)
         return
       }
@@ -40,7 +50,7 @@ export function AccessModeProvider({ children }: { children: ReactNode }) {
     setPublicSiteUrl(
       clientLocal ? '' : `${window.location.protocol}//${window.location.host}`,
     )
-  }, [])
+  }, [location.search])
 
   useEffect(() => {
     void (async () => {
@@ -48,7 +58,7 @@ export function AccessModeProvider({ children }: { children: ReactNode }) {
       await refresh()
       setLoading(false)
     })()
-  }, [refresh])
+  }, [refresh, location.pathname])
 
   const value = useMemo(
     () => ({ isLocal, loading, publicSiteUrl, refresh }),

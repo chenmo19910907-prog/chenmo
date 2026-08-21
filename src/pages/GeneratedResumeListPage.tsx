@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { fetchVariants } from '../utils/jobApi'
+import { getVariantScreenshotUrls } from '../utils/variantScreenshots'
+import { deleteVariant, fetchVariants } from '../utils/jobApi'
 import type { ResumeVariant } from '../types/job'
 
 export default function GeneratedResumeListPage() {
   const [variants, setVariants] = useState<ResumeVariant[]>([])
   const [loading, setLoading] = useState(true)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
     void (async () => {
@@ -22,15 +24,27 @@ export default function GeneratedResumeListPage() {
     })()
   }, [])
 
+  const handleDelete = async (variant: ResumeVariant) => {
+    const label = `${variant.company} · ${variant.jobTitle}`
+    if (!window.confirm(`确定删除「${label}」吗？此操作不可恢复。`)) return
+
+    setDeletingId(variant.id)
+    try {
+      await deleteVariant(variant.id)
+      setVariants((current) => current.filter((item) => item.id !== variant.id))
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : '删除失败')
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
   return (
     <main className="px-4 py-8">
       <div className="mx-auto max-w-4xl">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <Link to="/" className="text-sm text-blue-600 hover:underline">
-              ← 返回个人介绍
-            </Link>
-            <h1 className="mt-4 text-2xl font-bold text-slate-900">已生成简历</h1>
+            <h1 className="text-2xl font-bold text-slate-900">已生成简历</h1>
             <p className="mt-2 text-slate-600">根据招聘 JD 生成的定制简历列表（本机可见）</p>
           </div>
           <Link
@@ -55,14 +69,16 @@ export default function GeneratedResumeListPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {variants.map((variant) => (
+            {variants.map((variant) => {
+              const screenshotUrls = getVariantScreenshotUrls(variant)
+              return (
               <article
                 key={variant.id}
                 className="flex flex-wrap gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
               >
-                {variant.screenshotUrl && (
+                {screenshotUrls[0] && (
                   <img
-                    src={variant.screenshotUrl}
+                    src={screenshotUrls[0]}
                     alt="招聘截图"
                     className="h-24 w-24 shrink-0 rounded-lg border border-slate-200 object-cover"
                   />
@@ -77,37 +93,55 @@ export default function GeneratedResumeListPage() {
                         匹配度 {variant.matchScore}% ·{' '}
                         {new Date(variant.createdAt).toLocaleString('zh-CN')}
                       </p>
+                      {variant.jobAnalysis?.isOutsourcing && (
+                        <p className="mt-1 text-xs text-amber-700">疑似外包岗位，投递前请核实</p>
+                      )}
+                      {variant.jobAnalysis?.suggestions[0] && (
+                        <p className="mt-2 line-clamp-2 text-sm text-slate-600">
+                          {variant.jobAnalysis.suggestions[0]}
+                        </p>
+                      )}
                     </div>
+                    <div className="flex flex-col items-end gap-2">
                     <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
                       {variant.matchScore}%
                     </span>
+                    {variant.jobAnalysis?.isOutsourcing ? (
+                      <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-700">
+                        外包风险
+                      </span>
+                    ) : variant.jobAnalysis ? (
+                      <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">
+                        直招倾向
+                      </span>
+                    ) : null}
+                    </div>
                   </div>
-                  {variant.jdSummary && (
+                  {variant.jdSummary && !variant.jobAnalysis?.suggestions[0] && (
                     <p className="mt-3 line-clamp-2 text-sm text-slate-600">
                       {variant.jdSummary}
                     </p>
                   )}
-                  <div className="mt-4 flex flex-wrap gap-3">
+                  <div className="mt-4 flex items-stretch gap-3">
                     <Link
                       to={`/resumes/${variant.id}`}
-                      className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                      className="flex flex-1 items-center justify-center rounded-lg bg-blue-600 px-6 py-3 text-sm font-medium text-white hover:bg-blue-700"
                     >
                       详情
                     </Link>
-                    {variant.publicUrl && (
-                      <a
-                        href={variant.publicUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
-                      >
-                        外网预览
-                      </a>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => void handleDelete(variant)}
+                      disabled={deletingId === variant.id}
+                      className="shrink-0 rounded-lg border border-rose-200 px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                    >
+                      {deletingId === variant.id ? '删除中…' : '删除'}
+                    </button>
                   </div>
                 </div>
               </article>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>

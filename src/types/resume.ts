@@ -6,6 +6,10 @@ export interface BasicInfo {
   location: string
   website?: string
   github?: string
+  /** 是否在简历页眉展示个人头像 */
+  showAvatar?: boolean
+  /** 头像路径（public 相对路径或完整 URL） */
+  avatarUrl?: string
 }
 
 export interface WorkProject {
@@ -23,6 +27,7 @@ export interface WorkDetail {
   tools: string[]
   projects: WorkProject[]
   teamInfo?: string
+  platformAgentSummary?: string
 }
 
 export interface WorkExperience {
@@ -35,6 +40,8 @@ export interface WorkExperience {
   highlights: string[]
   featured?: boolean
   detail?: WorkDetail
+  /** 仅用于详情页头部与个人介绍工作卡片的展示标题 */
+  displayCompany?: string
 }
 
 export interface ProjectExperience {
@@ -55,7 +62,7 @@ export interface Education {
   major: string
   startDate: string
   endDate: string
-  /** 弱化展示（如大专），不抢本科视觉重心 */
+  /** 暂不展示（行首 * 标记），简历与导出中隐藏，需要时去掉 * 即可显示 */
   deemphasized?: boolean
 }
 

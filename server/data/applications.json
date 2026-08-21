@@ -1,6 +1,38 @@
 {
   "applications": [
     {
+      "id": "4acc91e5-46b7-49aa-9a11-589afe1276c6",
+      "jobId": "e2fad742-2fb2-46a2-b763-c23dd8ff8b1b",
+      "company": "北京中关村东升科技园北领地B-6楼B座4层乐信圣文",
+      "jobTitle": "4）梳理并持续优化测试流程，沉淀测试规范和标准，推动测试体系向更高成熟度演进",
+      "status": "watching",
+      "priority": "medium",
+      "profile": "business-expert",
+      "notes": "",
+      "appliedAt": null,
+      "nextAction": "",
+      "nextActionDate": null,
+      "interviewNotes": [],
+      "createdAt": "2026-08-12T03:09:12.346Z",
+      "updatedAt": "2026-08-12T03:09:12.346Z"
+    },
+    {
+      "id": "20acc187-b601-4f5e-8efe-78dc8d5fa23b",
+      "jobId": "2bb8b707-45c5-421f-8053-a454c952798e",
+      "company": "未命名公司",
+      "jobTitle": "未命名岗位",
+      "status": "watching",
+      "priority": "medium",
+      "profile": "business-expert",
+      "notes": "",
+      "appliedAt": null,
+      "nextAction": "",
+      "nextActionDate": null,
+      "interviewNotes": [],
+      "createdAt": "2026-08-08T06:50:41.736Z",
+      "updatedAt": "2026-08-08T06:50:41.736Z"
+    },
+    {
       "id": "423dc710-e021-49ff-a4f3-d873eab5dd0b",
       "jobId": "0bdcbe94-a3fa-4fcf-ac97-02ff1a843b33",
       "company": "腾讯",

@@ -15,6 +15,7 @@ import type {
   VariantStore,
 } from '../types/job'
 import type { Resume } from '../types/resume'
+import defaultResume from '../data/resume.json'
 
 const API_BASE = '/api'
 
@@ -26,6 +27,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (!res.ok) {
     let message = `请求失败 (${res.status})`
+    if (res.status === 413) {
+      message = '上传内容过大，请减少截图数量或换用更小的图片后重试'
+    }
     try {
       const body = (await res.json()) as { error?: string }
       if (body.error) message = body.error
@@ -141,20 +145,82 @@ export function fetchVariantById(id: string): Promise<ResumeVariant> {
   return request(`/variants/${id}`)
 }
 
-export function fetchPublicVariant(id: string): Promise<ResumeVariant> {
-  return request(`/public/variants/${id}`)
+export async function fetchMasterResume(): Promise<Resume> {
+  try {
+    return await request('/resume')
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('404')) {
+      return defaultResume as Resume
+    }
+    throw error
+  }
+}
+
+export function refreshVariant(
+  id: string,
+  resume: Resume,
+  profile: ResumeProfile = 'business-expert',
+): Promise<ResumeVariant> {
+  return request(`/variants/${id}/refresh`, {
+    method: 'POST',
+    body: JSON.stringify({ resume, profile }),
+  })
+}
+
+export function analyzeVariant(id: string): Promise<ResumeVariant> {
+  return request(`/variants/${id}/analyze`, { method: 'POST' })
+}
+
+export function updateVariant(
+  id: string,
+  patch: Partial<
+    Pick<ResumeVariant, 'resume' | 'company' | 'jobTitle' | 'jdSummary' | 'templateId'>
+  >,
+): Promise<ResumeVariant> {
+  return request(`/variants/${id}`, { method: 'PATCH', body: JSON.stringify(patch) })
+}
+
+export function deleteVariant(id: string): Promise<{ ok: boolean }> {
+  return request(`/variants/${id}`, { method: 'DELETE' })
+}
+
+export async function fetchPublicVariant(id: string): Promise<ResumeVariant> {
+  try {
+    return await request(`/public/variants/${id}`)
+  } catch {
+    const res = await fetch(`${import.meta.env.BASE_URL}variants/${id}.json`)
+    if (!res.ok) throw new Error('简历不存在或已失效')
+    return res.json() as Promise<ResumeVariant>
+  }
 }
 
 export function fetchAccessMode(): Promise<{ isLocal: boolean; publicSiteUrl: string }> {
   return request('/access-mode')
 }
 
+export function detectProfile(jdText: string): Promise<{
+  profile: ResumeProfile
+  label: string
+  scores: Record<ResumeProfile, number>
+}> {
+  return request('/detect-profile', {
+    method: 'POST',
+    body: JSON.stringify({ jdText }),
+  })
+}
+
 export function createResumeFromJd(input: {
   jdText: string
   screenshotBase64?: string
+  screenshotsBase64?: string[]
   resume: Resume
-  profile?: ResumeProfile
-}): Promise<{ ok: boolean; variant: ResumeVariant; job: JobStore['jobs'][0] }> {
+}): Promise<{
+  ok: boolean
+  variant: ResumeVariant
+  job: JobStore['jobs'][0]
+  profile: ResumeProfile
+  profileLabel: string
+}> {
   return request('/resume-maker', {
     method: 'POST',
     body: JSON.stringify(input),
