@@ -30,6 +30,7 @@
     },
     {
       "label": "用 Cursor 搭建智能工具平台",
+      "localOnly": true,
       "local": {
         "label": "用 Cursor 搭建智能工具平台",
         "url": "http://127.0.0.1:18766/platform-guide/",
@@ -43,6 +44,7 @@
     },
     {
       "label": "PK 提款机：从零到 MOA 与自动化",
+      "localOnly": true,
       "local": {
         "label": "PK 提款机：从零到 MOA 与自动化",
         "url": "http://127.0.0.1:18766/keynote/pk-atm-guide",
